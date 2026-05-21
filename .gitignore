@@ -8,5 +8,6 @@ venv/
 frontend/node_modules/
 media/
 staticfiles/
+.cache/
 .DS_Store
 ._*

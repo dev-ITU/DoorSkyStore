@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { fetchJson } from '../lib/api.js';
 import { ProductCard } from './ProductCard.jsx';
@@ -33,25 +33,55 @@ function buildQuery(filters) {
   return params.toString();
 }
 
+const INITIAL_QUERY = buildQuery(DEFAULT_FILTERS);
+
+function ProductSkeletonGrid() {
+  return (
+    <div className="catalog-skeleton-grid" aria-hidden="true">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <article className="catalog-skeleton-card" key={index}>
+          <div className="catalog-skeleton-media" />
+          <div className="catalog-skeleton-body">
+            <span />
+            <strong />
+            <p />
+            <em />
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 export function CatalogIsland({
   addToCartUrl,
   apiUrl,
   categories,
   colors,
+  initialNextUrl,
   initialProducts,
   materials,
   openingTypes,
 }) {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [products, setProducts] = useState(initialProducts || []);
-  const [nextUrl, setNextUrl] = useState('');
+  const [nextUrl, setNextUrl] = useState(initialNextUrl || '');
+  const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const firstRender = useRef(true);
   const { messages, push, dismiss } = useToasts();
   const query = useMemo(() => buildQuery(filters), [filters]);
 
   useEffect(() => {
+    if (firstRender.current && query === INITIAL_QUERY) {
+      firstRender.current = false;
+      return undefined;
+    }
+    firstRender.current = false;
+
     const controller = new AbortController();
+    setLoading(true);
     setError('');
 
     fetchJson(`${apiUrl}?${query}`, { signal: controller.signal })
@@ -64,9 +94,31 @@ export function CatalogIsland({
           setError(requestError.message);
         }
       })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      });
 
     return () => controller.abort();
   }, [apiUrl, query]);
+
+  useEffect(() => {
+    if (!nextUrl) {
+      return undefined;
+    }
+
+    const prefetch = () => {
+      fetchJson(nextUrl, { cacheTtl: 60000 }).catch(() => {});
+    };
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(prefetch, { timeout: 1600 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(prefetch, 450);
+    return () => window.clearTimeout(timeoutId);
+  }, [nextUrl]);
 
   function updateFilter(name, value) {
     setFilters((current) => ({ ...current, [name]: value }));
@@ -219,12 +271,14 @@ export function CatalogIsland({
         </details>
       </aside>
 
-      <section className="catalog-results">
+      <section className={`catalog-results ${loading ? 'is-loading' : ''}`} aria-busy={loading}>
         <ToastStack messages={messages} onDismiss={dismiss} />
         {error ? <p className="empty-state">{error}</p> : null}
-        {!error && products.length === 0 ? (
+        {loading && products.length === 0 ? <ProductSkeletonGrid /> : null}
+        {!loading && !error && products.length === 0 ? (
           <p className="empty-state">Подходящих товаров не найдено.</p>
-        ) : (
+        ) : null}
+        {products.length > 0 ? (
           <div className="product-grid">
             {products.map((product) => (
               <ProductCard
@@ -235,7 +289,7 @@ export function CatalogIsland({
               />
             ))}
           </div>
-        )}
+        ) : null}
         {nextUrl ? (
           <div className="load-more-row">
             <button className="button ghost" disabled={loadingMore} onClick={loadMore} type="button">

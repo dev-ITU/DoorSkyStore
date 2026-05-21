@@ -6,7 +6,7 @@
 <section class="product-detail">
     <div class="detail-media">
         {% if product.display_image %}
-            <img src="{{ product.display_image }}" alt="{{ product.name }}">
+            <img src="{{ product.display_image }}" alt="{{ product.name }}" loading="eager" decoding="async" fetchpriority="high">
         {% else %}
             <span>{{ product.category.name }}</span>
         {% endif %}

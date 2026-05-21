@@ -1,10 +1,19 @@
 from decimal import Decimal, InvalidOperation
 
+from django.core.cache import cache
 from django.db.models import Q
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from .cache import (
+    catalog_cache_key,
+    catalog_cache_timeout,
+    catalog_facets_payload,
+    product_base_payload,
+    product_payloads_for_cart,
+    query_signature,
+)
 from .models import Category, DoorProduct
 
 
@@ -89,6 +98,36 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProductSerializer
     lookup_field = 'slug'
 
+    def list(self, request, *args, **kwargs):
+        cache_key = catalog_cache_key(
+            'product-list',
+            request.scheme,
+            request.get_host(),
+            query_signature(request.query_params),
+        )
+        base_payload = cache.get(cache_key)
+
+        if base_payload is None:
+            queryset = self.filter_queryset(self.get_queryset())
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                base_payload = {
+                    'count': self.paginator.page.paginator.count,
+                    'next': self.paginator.get_next_link(),
+                    'previous': self.paginator.get_previous_link(),
+                    'results': [product_base_payload(product) for product in page],
+                }
+            else:
+                base_payload = {
+                    'results': [product_base_payload(product) for product in queryset],
+                }
+            cache.set(cache_key, base_payload, catalog_cache_timeout())
+
+        cart = request.session.get('doorsky_cart', {})
+        payload = dict(base_payload)
+        payload['results'] = product_payloads_for_cart(base_payload['results'], cart)
+        return Response(payload)
+
     def get_queryset(self):
         queryset = DoorProduct.objects.active().select_related('category', 'stock')
         params = self.request.query_params
@@ -135,15 +174,11 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def facets(self, request):
-        queryset = DoorProduct.objects.active()
+        payload = catalog_facets_payload()
         return Response(
             {
-                'materials': sorted(filter(None, queryset.values_list('material', flat=True).distinct())),
-                'colors': sorted(filter(None, queryset.values_list('color', flat=True).distinct())),
-                'opening_types': [
-                    {'value': value, 'label': label}
-                    for value, label in DoorProduct.OPENING_CHOICES
-                    if queryset.filter(opening_type=value).exists()
-                ],
+                'materials': payload['materials'],
+                'colors': payload['colors'],
+                'opening_types': payload['opening_types'],
             }
         )

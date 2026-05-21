@@ -158,6 +158,14 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+CACHES = {
+    'default': {
+        'BACKEND': os.getenv('DJANGO_CACHE_BACKEND', 'django.core.cache.backends.filebased.FileBasedCache'),
+        'LOCATION': os.getenv('DJANGO_CACHE_LOCATION', str(BASE_DIR / '.cache')),
+    }
+}
+CATALOG_CACHE_TIMEOUT = int(os.getenv('DJANGO_CATALOG_CACHE_TIMEOUT', '180'))
+
 LOGIN_REDIRECT_URL = 'catalog'
 LOGOUT_REDIRECT_URL = 'catalog'
 LOGIN_URL = 'login'

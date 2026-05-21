@@ -8,57 +8,21 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from catalog.models import Category, DoorProduct, StockItem
+from catalog.cache import (
+    catalog_facets_payload,
+    product_base_payload,
+    product_payload_for_cart,
+    product_payloads_for_cart,
+)
+from catalog.models import DoorProduct, StockItem
 from orders.forms import CheckoutForm
 from orders.models import Order, OrderItem
 
 CART_SESSION_KEY = 'doorsky_cart'
 
 
-def _cart_quantity_for_product(cart, product_id):
-    try:
-        return int(cart.get(str(product_id), 0))
-    except (TypeError, ValueError):
-        return 0
-
-
 def _product_payload(product, cart=None):
-    cart = cart or {}
-    cart_quantity = _cart_quantity_for_product(cart, product.pk)
-    remaining_quantity = max(product.available_quantity - cart_quantity, 0)
-    return {
-        'id': product.pk,
-        'name': product.name,
-        'slug': product.slug,
-        'sku': product.sku,
-        'category': {
-            'name': product.category.name,
-            'slug': product.category.slug,
-        },
-        'description': product.description,
-        'price': str(product.price),
-        'material': product.material,
-        'color': product.color,
-        'finish': product.finish,
-        'opening_type': product.opening_type,
-        'display_image': product.display_image,
-        'available_quantity': product.available_quantity,
-        'cart_quantity': cart_quantity,
-        'remaining_quantity': remaining_quantity,
-        'detail_url': product.get_absolute_url(),
-    }
-
-
-def _category_payload(category):
-    return {
-        'id': category.pk,
-        'name': category.name,
-        'slug': category.slug,
-    }
-
-
-def _option_payload(choices):
-    return [{'value': value, 'label': label} for value, label in choices]
+    return product_payload_for_cart(product_base_payload(product), cart or {})
 
 
 def _cart_item_payload(item):
@@ -153,26 +117,30 @@ def _normalize_cart(session):
 def product_list(request):
     _normalize_cart(request.session)
     cart = _cart(request.session)
-    products = list(DoorProduct.objects.active().select_related('category', 'stock')[:12])
-    categories = list(Category.objects.filter(is_active=True))
-    facets_queryset = DoorProduct.objects.active()
-    materials = sorted(filter(None, facets_queryset.values_list('material', flat=True).distinct()))
-    colors = sorted(filter(None, facets_queryset.values_list('color', flat=True).distinct()))
+    products = list(DoorProduct.objects.active().select_related('category', 'stock').order_by('name')[:12])
+    facets = catalog_facets_payload()
+    initial_products = product_payloads_for_cart([product_base_payload(product) for product in products], cart)
+    initial_next_url = reverse('product-list')
+    if facets['count'] > len(products):
+        initial_next_url = f'{initial_next_url}?ordering=name&page=2'
+    else:
+        initial_next_url = ''
     context = {
         'products': products,
-        'categories': categories,
-        'materials': materials,
-        'colors': colors,
+        'categories': facets['categories'],
+        'materials': facets['materials'],
+        'colors': facets['colors'],
         'opening_types': DoorProduct.OPENING_CHOICES,
         'catalog_props': {
             'apiUrl': reverse('product-list'),
             'addToCartUrl': reverse('add_to_cart'),
-            'categories': [_category_payload(category) for category in categories],
-            'materials': materials,
-            'colors': colors,
-            'openingTypes': _option_payload(DoorProduct.OPENING_CHOICES),
-            'initialProducts': [_product_payload(product, cart) for product in products],
-            'initialCount': facets_queryset.count(),
+            'categories': facets['categories'],
+            'materials': facets['materials'],
+            'colors': facets['colors'],
+            'openingTypes': facets['opening_types'],
+            'initialProducts': initial_products,
+            'initialCount': facets['count'],
+            'initialNextUrl': initial_next_url,
         },
     }
     return render(request, 'storefront/product_list.html', context)

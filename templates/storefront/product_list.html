@@ -87,7 +87,7 @@
                     <article class="product-card">
                         <a class="product-image" href="{{ product.get_absolute_url }}">
                             {% if product.display_image %}
-                                <img src="{{ product.display_image }}" alt="{{ product.name }}">
+                                <img src="{{ product.display_image }}" alt="{{ product.name }}" loading="lazy" decoding="async">
                             {% else %}
                                 <span>{{ product.category.name }}</span>
                             {% endif %}

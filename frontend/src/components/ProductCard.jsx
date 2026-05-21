@@ -4,14 +4,20 @@ import { postForm } from '../lib/api.js';
 import { money } from '../lib/format.js';
 
 export function ProductCard({ product, addToCartUrl, onToast }) {
+  const imageUrl = product.display_image || '';
   const available = Number(product.available_quantity || 0);
   const initialCartQuantity = Number(product.cart_quantity || 0);
   const initialRemaining = Math.max(Number(product.remaining_quantity ?? available - initialCartQuantity), 0);
   const [cartQuantity, setCartQuantity] = useState(initialCartQuantity);
   const [quantity, setQuantity] = useState(initialRemaining > 0 ? 1 : 0);
   const [saving, setSaving] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(!imageUrl);
   const remaining = Math.max(available - cartQuantity, 0);
   const disabled = remaining <= 0 || saving;
+
+  useEffect(() => {
+    setImageLoaded(!imageUrl);
+  }, [imageUrl]);
 
   useEffect(() => {
     const nextCartQuantity = Number(product.cart_quantity || 0);
@@ -58,9 +64,19 @@ export function ProductCard({ product, addToCartUrl, onToast }) {
 
   return (
     <article className="product-card">
-      <a className="product-image" href={product.detail_url}>
-        {product.display_image ? (
-          <img src={product.display_image} alt={product.name} />
+      <a className={`product-image ${imageUrl && !imageLoaded ? 'is-loading' : ''}`} href={product.detail_url}>
+        {imageUrl ? (
+          <img
+            alt={product.name}
+            className={imageLoaded ? 'is-loaded' : ''}
+            data-lazy-image
+            decoding="async"
+            fetchPriority="low"
+            loading="lazy"
+            onError={() => setImageLoaded(true)}
+            onLoad={() => setImageLoaded(true)}
+            src={imageUrl}
+          />
         ) : (
           <span>{product.category.name}</span>
         )}
