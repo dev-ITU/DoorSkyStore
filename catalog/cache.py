@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.core.cache import cache
+from django.db import connection
 
 from .models import Category, DoorProduct
 
@@ -29,7 +30,16 @@ def bump_catalog_cache_version():
 
 
 def catalog_cache_key(namespace, *parts):
-    raw = '|'.join([str(catalog_cache_version()), namespace, *[str(part) for part in parts]])
+    raw = '|'.join(
+        [
+            str(catalog_cache_version()),
+            str(connection.settings_dict.get('ENGINE', '')),
+            str(connection.settings_dict.get('HOST', '')),
+            str(connection.settings_dict.get('NAME', '')),
+            namespace,
+            *[str(part) for part in parts],
+        ]
+    )
     digest = sha256(raw.encode('utf-8')).hexdigest()
     return f'doorsky:catalog:{namespace}:{digest}'
 
