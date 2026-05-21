@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { fetchJson } from '../lib/api.js';
 import { ProductCard } from './ProductCard.jsx';
@@ -70,6 +70,8 @@ export function CatalogIsland({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const firstRender = useRef(true);
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef(null);
   const { messages, push, dismiss } = useToasts();
   const query = useMemo(() => buildQuery(filters), [filters]);
 
@@ -124,10 +126,11 @@ export function CatalogIsland({
     setFilters((current) => ({ ...current, [name]: value }));
   }
 
-  async function loadMore() {
-    if (!nextUrl) {
+  const loadMore = useCallback(async () => {
+    if (!nextUrl || loading || loadingMoreRef.current) {
       return;
     }
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
       const data = await fetchJson(nextUrl);
@@ -136,9 +139,29 @@ export function CatalogIsland({
     } catch (requestError) {
       setError(requestError.message);
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }
+  }, [loading, nextUrl]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !nextUrl || typeof IntersectionObserver === 'undefined') {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMore();
+        }
+      },
+      { rootMargin: '520px 0px 520px' },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore, nextUrl]);
 
   return (
     <section className="catalog-layout">
@@ -290,13 +313,9 @@ export function CatalogIsland({
             ))}
           </div>
         ) : null}
-        {nextUrl ? (
-          <div className="load-more-row">
-            <button className="button ghost" disabled={loadingMore} onClick={loadMore} type="button">
-              {loadingMore ? 'Загрузка...' : 'Показать еще'}
-            </button>
-          </div>
-        ) : null}
+        <div className="catalog-autoload-sentinel" ref={sentinelRef} aria-live="polite">
+          {loadingMore ? <span>Загрузка</span> : null}
+        </div>
       </section>
     </section>
   );
