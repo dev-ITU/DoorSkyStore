@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Оплата заказа #{{ order.pk }}{% endblock %}
+
+{% block content %}
+<section class="checkout-layout payment-layout">
+    <div>
+        <p class="eyebrow">DoorSky Pay Simulator</p>
+        <h1>Оплата заказа #{{ order.pk }}</h1>
+        <form method="post" class="form-card payment-form">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <div class="payment-terminal">
+                <div>
+                    <span>К оплате</span>
+                    <strong>{{ order.subtotal|floatformat:0 }} руб.</strong>
+                </div>
+                <div>
+                    <span>Метод</span>
+                    <strong>{{ order.get_payment_method_display }}</strong>
+                </div>
+                <div>
+                    <span>Статус</span>
+                    <strong>{{ order.get_payment_status_display }}</strong>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Сценарий проведения</h2>
+                <div class="choice-list">{{ form.scenario }}</div>
+            </div>
+
+            <div class="form-section">
+                <h2>Данные платежа</h2>
+                <div class="field-grid">
+                    <div>
+                        <label for="{{ form.card_holder.id_for_label }}">{{ form.card_holder.label }}{{ form.card_holder }}</label>
+                        {{ form.card_holder.errors }}
+                    </div>
+                    <div>
+                        <label for="{{ form.card_number.id_for_label }}">{{ form.card_number.label }}{{ form.card_number }}</label>
+                        {{ form.card_number.errors }}
+                    </div>
+                    <div>
+                        <label for="{{ form.card_expiry.id_for_label }}">{{ form.card_expiry.label }}{{ form.card_expiry }}</label>
+                        {{ form.card_expiry.errors }}
+                    </div>
+                    <div>
+                        <label for="{{ form.card_cvc.id_for_label }}">{{ form.card_cvc.label }}{{ form.card_cvc }}</label>
+                        {{ form.card_cvc.errors }}
+                    </div>
+                    <div class="field-wide">
+                        <label for="{{ form.payer_note.id_for_label }}">{{ form.payer_note.label }}{{ form.payer_note }}</label>
+                        {{ form.payer_note.errors }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="button primary" type="submit">Провести платеж</button>
+                <a class="button ghost" href="{{ order.get_absolute_url }}">Вернуться к заказу</a>
+            </div>
+        </form>
+    </div>
+    <aside class="order-summary">
+        <h2>Состав заказа</h2>
+        {% for item in order.items.all %}
+            <div class="summary-row">
+                <span>{{ item.product.name }} x {{ item.quantity }}</span>
+                <strong>{{ item.line_total|floatformat:0 }} руб.</strong>
+            </div>
+        {% endfor %}
+        <div class="summary-total">
+            <span>Итого</span>
+            <strong>{{ order.subtotal|floatformat:0 }} руб.</strong>
+        </div>
+    </aside>
+</section>
+{% endblock %}

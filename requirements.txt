@@ -1,0 +1,9 @@
+Django==5.2.12
+djangorestframework==3.17.1
+psycopg[binary]==3.3.3
+Pillow==12.2.0
+requests==2.32.5
+beautifulsoup4==4.14.3
+openpyxl==3.1.5
+python-docx==1.2.0
+gunicorn==23.0.0

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Корзина{% endblock %}
+
+{% block content %}
+{{ cart_props|json_script:"cart-props" }}
+<div data-react-island="cart" data-props-id="cart-props">
+    <section class="page-section">
+        <div class="section-head">
+            <h1>Корзина</h1>
+            <a class="button ghost" href="{% url 'catalog' %}">Продолжить покупки</a>
+        </div>
+
+        {% if items %}
+            <div class="cart-list">
+                {% for item in items %}
+                    <article class="cart-row">
+                        <div>
+                            <p class="eyebrow">{{ item.product.sku }} · {{ item.product.category.name }}</p>
+                            <h2><a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a></h2>
+                            <p>Доступно: {{ item.available_quantity }} шт.</p>
+                        </div>
+                        <div class="cart-controls">
+                            <input type="number" min="0" max="{{ item.available_quantity }}" value="{{ item.quantity }}">
+                            <strong>{{ item.line_total|floatformat:0 }} руб.</strong>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+            <div class="cart-summary">
+                <span>Итого</span>
+                <strong>{{ subtotal|floatformat:0 }} руб.</strong>
+                <a class="button primary" href="{% url 'checkout' %}">Оформить заказ</a>
+            </div>
+        {% else %}
+            <p class="empty-state">В корзине пока нет товаров.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

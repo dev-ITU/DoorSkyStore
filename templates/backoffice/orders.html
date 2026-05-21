@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Заказы{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Backoffice</p>
+            <h1>Заказы</h1>
+        </div>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <form class="office-filter-bar" method="get">
+        <label>
+            Поиск
+            <input name="q" type="search" value="{{ query }}" placeholder="ID, клиент, телефон, платеж">
+        </label>
+        <label>
+            Статус
+            <select name="status">
+                <option value="">Все</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Оплата
+            <select name="payment_status">
+                <option value="">Все</option>
+                {% for value, label in payment_status_choices %}
+                    <option value="{{ value }}" {% if current_payment_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button class="button primary" type="submit">Применить</button>
+    </form>
+
+    <section class="office-panel">
+        <div class="office-table-wrap">
+            <table class="office-table">
+                <thead>
+                    <tr>
+                        <th>Заказ</th>
+                        <th>Клиент</th>
+                        <th>Тип</th>
+                        <th>Статус</th>
+                        <th>Оплата</th>
+                        <th>Сумма</th>
+                        <th>Создан</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in page_obj %}
+                        <tr>
+                            <td><a href="{% url 'backoffice_order_detail' order.pk %}">#{{ order.pk }}</a></td>
+                            <td>
+                                <strong>{{ order.customer_name }}</strong><br>
+                                <span>{{ order.customer_phone }}</span>
+                            </td>
+                            <td>{{ order.get_customer_type_display }}</td>
+                            <td><span class="status-pill status-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                            <td><span class="status-pill payment-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span></td>
+                            <td>{{ order.subtotal|floatformat:0 }} руб.</td>
+                            <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="7">Заказы не найдены.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% include "backoffice/_pagination.html" %}
+</section>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Отчеты{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="section-head">
+        <h1>Отчеты</h1>
+        <div class="actions">
+            <a class="button ghost" href="{% url 'sales_report_xlsx' %}">Продажи XLSX</a>
+            <a class="button ghost" href="{% url 'stock_report_xlsx' %}">Склад XLSX</a>
+        </div>
+    </div>
+    <div class="metric-grid">
+        <div><span>Всего заказов</span><strong>{{ orders_total }}</strong></div>
+        <div><span>Новые</span><strong>{{ orders_new }}</strong></div>
+        <div><span>Подтверждены</span><strong>{{ orders_confirmed }}</strong></div>
+        <div><span>Оплаченная выручка</span><strong>{{ revenue|floatformat:0 }} руб.</strong></div>
+        <div><span>Оплачены</span><strong>{{ payments_paid }}</strong></div>
+        <div><span>Ждут оплату</span><strong>{{ payments_waiting }}</strong></div>
+        <div><span>Ошибки оплаты</span><strong>{{ payments_failed }}</strong></div>
+    </div>
+    <div class="report-grid">
+        <section>
+            <h2>Статусы заказов</h2>
+            <table>
+                <thead><tr><th>Статус</th><th>Кол-во</th><th>Сумма</th></tr></thead>
+                <tbody>
+                    {% for row in status_rows %}
+                        <tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.total|default:0|floatformat:0 }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        <section>
+            <h2>Статусы оплаты</h2>
+            <table>
+                <thead><tr><th>Статус</th><th>Кол-во</th><th>Сумма</th></tr></thead>
+                <tbody>
+                    {% for row in payment_rows %}
+                        <tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.total|default:0|floatformat:0 }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        <section>
+            <h2>Низкие остатки</h2>
+            <table>
+                <thead><tr><th>Артикул</th><th>Товар</th><th>Доступно</th></tr></thead>
+                <tbody>
+                    {% for stock in low_stock %}
+                        <tr><td>{{ stock.product.sku }}</td><td>{{ stock.product.name }}</td><td>{{ stock.available_quantity }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="3">Критичных остатков нет.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+</section>
+{% endblock %}

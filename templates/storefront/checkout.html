@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+{% block content %}
+<section class="checkout-layout">
+    <div>
+        <h1>Оформление заказа</h1>
+        <form method="post" class="form-card checkout-form">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+
+            <div class="form-section">
+                <h2>Покупатель</h2>
+                <div class="choice-grid customer-choice-grid">
+                    {% for radio in form.customer_type %}
+                        <label class="choice-card" for="{{ radio.id_for_label }}">
+                            {{ radio.tag }}
+                            <span class="choice-card-title">{{ radio.choice_label }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                {{ form.customer_type.errors }}
+                <div class="field-grid">
+                    <div>
+                        <label for="{{ form.customer_name.id_for_label }}">{{ form.customer_name.label }}{{ form.customer_name }}</label>
+                        {{ form.customer_name.errors }}
+                    </div>
+                    <div>
+                        <label for="{{ form.customer_phone.id_for_label }}">{{ form.customer_phone.label }}{{ form.customer_phone }}</label>
+                        {{ form.customer_phone.errors }}
+                    </div>
+                    <div>
+                        <label for="{{ form.customer_email.id_for_label }}">{{ form.customer_email.label }}{{ form.customer_email }}</label>
+                        {{ form.customer_email.errors }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section company-fields">
+                <h2>Реквизиты для документов</h2>
+                <div class="field-grid">
+                    <div>
+                        <label for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}{{ form.company_name }}</label>
+                        {{ form.company_name.errors }}
+                    </div>
+                    <div>
+                        <label for="{{ form.company_inn.id_for_label }}">{{ form.company_inn.label }}{{ form.company_inn }}</label>
+                        {{ form.company_inn.errors }}
+                    </div>
+                    <div>
+                        <label for="{{ form.company_kpp.id_for_label }}">{{ form.company_kpp.label }}{{ form.company_kpp }}</label>
+                        {{ form.company_kpp.errors }}
+                    </div>
+                    <div class="field-wide">
+                        <label for="{{ form.company_address.id_for_label }}">{{ form.company_address.label }}{{ form.company_address }}</label>
+                        {{ form.company_address.errors }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Доставка и оплата</h2>
+                <div>
+                    <label for="{{ form.delivery_address.id_for_label }}">{{ form.delivery_address.label }}{{ form.delivery_address }}</label>
+                    {{ form.delivery_address.errors }}
+                </div>
+                <div class="choice-grid payment-choice-grid">
+                    {% for radio in form.payment_method %}
+                        <label class="choice-card payment-choice-card" for="{{ radio.id_for_label }}">
+                            {{ radio.tag }}
+                            <span class="choice-card-title">{{ radio.choice_label }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                {{ form.payment_method.errors }}
+                <div>
+                    <label for="{{ form.comment.id_for_label }}">{{ form.comment.label }}{{ form.comment }}</label>
+                    {{ form.comment.errors }}
+                </div>
+            </div>
+
+            <button class="button primary" type="submit">Создать заказ и перейти к оплате</button>
+        </form>
+    </div>
+    <aside class="order-summary">
+        <h2>Состав заказа</h2>
+        {% for item in items %}
+            <div class="summary-row">
+                <span>{{ item.product.name }} x {{ item.quantity }}</span>
+                <strong>{{ item.line_total|floatformat:0 }} руб.</strong>
+            </div>
+        {% endfor %}
+        <div class="summary-total">
+            <span>Итого</span>
+            <strong>{{ subtotal|floatformat:0 }} руб.</strong>
+        </div>
+    </aside>
+</section>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+(() => {
+    const form = document.querySelector('.checkout-form');
+    if (!form) {
+        return;
+    }
+
+    const companyFields = form.querySelector('.company-fields');
+    const companyInputs = companyFields ? companyFields.querySelectorAll('input, textarea, select') : [];
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    function checkedValue(name) {
+        return form.querySelector(`input[name="${name}"]:checked`)?.value || '';
+    }
+
+    function syncCustomerType() {
+        const isCompany = checkedValue('customer_type') === 'company';
+        form.classList.toggle('is-company', isCompany);
+        if (companyFields) {
+            companyFields.hidden = !isCompany;
+        }
+        companyInputs.forEach((input) => {
+            input.disabled = !isCompany;
+            if (!isCompany) {
+                input.value = '';
+            }
+        });
+    }
+
+    function syncPaymentMethod() {
+        if (!submitButton) {
+            return;
+        }
+        const isCashOnDelivery = checkedValue('payment_method') === 'cash_on_delivery';
+        submitButton.textContent = isCashOnDelivery ? 'Создать заказ' : 'Создать заказ и перейти к оплате';
+    }
+
+    form.querySelectorAll('input[name="customer_type"]').forEach((input) => {
+        input.addEventListener('change', syncCustomerType);
+    });
+    form.querySelectorAll('input[name="payment_method"]').forEach((input) => {
+        input.addEventListener('change', syncPaymentMethod);
+    });
+    syncCustomerType();
+    syncPaymentMethod();
+})();
+</script>
+{% endblock %}

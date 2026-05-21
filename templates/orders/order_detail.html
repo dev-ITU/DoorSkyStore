@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Заказ #{{ order.pk }}{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Заказ #{{ order.pk }}</p>
+            <h1>{{ order.get_status_display }}</h1>
+        </div>
+        <div class="actions">
+            {% if order.can_pay %}
+                <a class="button primary" href="{{ payment_url }}">Оплатить</a>
+            {% endif %}
+            <a class="button ghost" href="{{ package_url }}">Документы ZIP</a>
+        </div>
+    </div>
+    <div class="info-grid">
+        <div>
+            <span>Клиент</span>
+            <strong>{{ order.customer_name }}</strong>
+        </div>
+        <div>
+            <span>Телефон</span>
+            <strong>{{ order.customer_phone }}</strong>
+        </div>
+        <div>
+            <span>Сумма</span>
+            <strong>{{ order.subtotal|floatformat:0 }} руб.</strong>
+        </div>
+        <div>
+            <span>Резерв склада</span>
+            <strong>{% if order.stock_reserved %}Да{% else %}Нет{% endif %}</strong>
+        </div>
+        <div>
+            <span>Оплата</span>
+            <strong>{{ order.get_payment_status_display }}</strong>
+        </div>
+        <div>
+            <span>Способ оплаты</span>
+            <strong>{{ order.get_payment_method_display }}</strong>
+        </div>
+        {% if order.payment_reference %}
+            <div>
+                <span>Номер платежа</span>
+                <strong>{{ order.payment_reference }}</strong>
+            </div>
+        {% endif %}
+        {% if order.paid_at %}
+            <div>
+                <span>Дата оплаты</span>
+                <strong>{{ order.paid_at|date:"d.m.Y H:i" }}</strong>
+            </div>
+        {% endif %}
+    </div>
+    <div class="document-panel">
+        <div>
+            <p class="eyebrow">Комплект документов</p>
+            <h2>Чек, счет, накладная и акт</h2>
+        </div>
+        <div class="document-grid">
+            {% for document in documents %}
+                <article class="document-card pdf-document-card">
+                    <button
+                        class="document-main-link document-preview-trigger"
+                        type="button"
+                        data-pdf-url="{{ document.pdf_url }}"
+                        data-download-url="{{ document.download_url }}"
+                        data-document-title="{{ document.label }}"
+                    >
+                        <span>{{ document.label }}</span>
+                        <strong>PDF</strong>
+                    </button>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="cart-list">
+        {% for item in order.items.all %}
+            <article class="cart-row">
+                <div>
+                    <p class="eyebrow">{{ item.product.sku }}</p>
+                    <h2>{{ item.product.name }}</h2>
+                </div>
+                <div class="cart-controls">
+                    <span>{{ item.quantity }} шт.</span>
+                    <strong>{{ item.line_total|floatformat:0 }} руб.</strong>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    {% if order.payment_transactions.all %}
+        <section class="payment-history">
+            <h2>История платежей</h2>
+            <table>
+                <thead>
+                    <tr><th>Дата</th><th>Операция</th><th>Статус</th><th>Сумма</th></tr>
+                </thead>
+                <tbody>
+                    {% for transaction in order.payment_transactions.all %}
+                        <tr>
+                            <td>{{ transaction.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>{{ transaction.reference }}</td>
+                            <td>{{ transaction.get_status_display }}</td>
+                            <td>{{ transaction.amount|floatformat:0 }} руб.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    {% endif %}
+</section>
+
+<div class="pdf-modal" hidden role="dialog" aria-modal="true" aria-labelledby="pdf-modal-title">
+    <div class="pdf-modal-shell">
+        <div class="pdf-modal-head">
+            <div>
+                <p class="eyebrow">Просмотр PDF</p>
+                <h2 id="pdf-modal-title">Документ</h2>
+            </div>
+            <div class="actions">
+                <a class="button ghost pdf-modal-download" href="#" download>Скачать PDF</a>
+                <button class="button ghost pdf-modal-close" type="button" aria-label="Закрыть">Закрыть</button>
+            </div>
+        </div>
+        <iframe class="pdf-modal-frame" title="Предпросмотр PDF"></iframe>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+(() => {
+    const modal = document.querySelector('.pdf-modal');
+    if (!modal) {
+        return;
+    }
+
+    const frame = modal.querySelector('.pdf-modal-frame');
+    const title = modal.querySelector('#pdf-modal-title');
+    const download = modal.querySelector('.pdf-modal-download');
+    const closeButton = modal.querySelector('.pdf-modal-close');
+
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('.document-preview-trigger');
+        if (!button) {
+            return;
+        }
+
+        const pdfUrl = button.dataset.pdfUrl;
+        if (!pdfUrl) {
+            return;
+        }
+
+        title.textContent = button.dataset.documentTitle || 'Документ';
+        frame.src = pdfUrl;
+        download.href = button.dataset.downloadUrl || pdfUrl;
+        modal.hidden = false;
+        modal.classList.add('is-open');
+        document.body.classList.add('modal-open');
+        closeButton.focus();
+    });
+
+    function closeModal() {
+        frame.removeAttribute('src');
+        modal.classList.remove('is-open');
+        modal.hidden = true;
+        document.body.classList.remove('modal-open');
+    }
+
+    closeButton.addEventListener('click', closeModal);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+            closeModal();
+        }
+    });
+})();
+</script>
+{% endblock %}

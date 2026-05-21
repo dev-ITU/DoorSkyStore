@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_create %}Новый товар{% else %}{{ product.name }}{% endif %}{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Backoffice</p>
+            <h1>{% if is_create %}Новый товар{% else %}{{ product.name }}{% endif %}</h1>
+        </div>
+        <div class="actions">
+            <a class="button ghost" href="{% url 'backoffice_catalog' %}">К каталогу</a>
+            {% if product %}<a class="button ghost" href="{{ product.get_absolute_url }}">На сайт</a>{% endif %}
+        </div>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <form class="office-form office-panel" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {{ stock_form.non_field_errors }}
+
+        <div class="office-form-section">
+            <h2>Основное</h2>
+            <div class="field-grid">
+                <label>{{ form.category.label }}{{ form.category }}{{ form.category.errors }}</label>
+                <label>{{ form.name.label }}{{ form.name }}{{ form.name.errors }}</label>
+                <label>{{ form.slug.label }}{{ form.slug }}{{ form.slug.errors }}</label>
+                <label>{{ form.sku.label }}{{ form.sku }}{{ form.sku.errors }}</label>
+                <label>{{ form.price.label }}{{ form.price }}{{ form.price.errors }}</label>
+                <label class="check-row office-check">{{ form.is_active }} {{ form.is_active.label }}</label>
+                <label class="field-wide">{{ form.description.label }}{{ form.description }}{{ form.description.errors }}</label>
+            </div>
+        </div>
+
+        <div class="office-form-section">
+            <h2>Характеристики</h2>
+            <div class="field-grid">
+                <label>{{ form.opening_type.label }}{{ form.opening_type }}{{ form.opening_type.errors }}</label>
+                <label>{{ form.material.label }}{{ form.material }}{{ form.material.errors }}</label>
+                <label>{{ form.color.label }}{{ form.color }}{{ form.color.errors }}</label>
+                <label>{{ form.finish.label }}{{ form.finish }}{{ form.finish.errors }}</label>
+                <label>{{ form.width_min_mm.label }}{{ form.width_min_mm }}{{ form.width_min_mm.errors }}</label>
+                <label>{{ form.width_max_mm.label }}{{ form.width_max_mm }}{{ form.width_max_mm.errors }}</label>
+                <label>{{ form.height_min_mm.label }}{{ form.height_min_mm }}{{ form.height_min_mm.errors }}</label>
+                <label>{{ form.height_max_mm.label }}{{ form.height_max_mm }}{{ form.height_max_mm.errors }}</label>
+            </div>
+        </div>
+
+        <div class="office-form-section">
+            <h2>Склад</h2>
+            <div class="field-grid">
+                <label>{{ stock_form.quantity.label }}{{ stock_form.quantity }}{{ stock_form.quantity.errors }}</label>
+                <label>{{ stock_form.reserved_quantity.label }}{{ stock_form.reserved_quantity }}{{ stock_form.reserved_quantity.errors }}</label>
+                <label>{{ stock_form.min_quantity.label }}{{ stock_form.min_quantity }}{{ stock_form.min_quantity.errors }}</label>
+            </div>
+        </div>
+
+        <div class="office-form-section">
+            <h2>Медиа и источник</h2>
+            <div class="field-grid">
+                <label>{{ form.image.label }}{{ form.image }}{{ form.image.errors }}</label>
+                <label>{{ form.image_url.label }}{{ form.image_url }}{{ form.image_url.errors }}</label>
+                <label class="field-wide">{{ form.source_url.label }}{{ form.source_url }}{{ form.source_url.errors }}</label>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="button primary" type="submit">Сохранить товар</button>
+            <a class="button ghost" href="{% url 'backoffice_catalog' %}">Отмена</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Каталог дверей{% endblock %}
+
+{% block content %}
+{{ catalog_props|json_script:"catalog-props" }}
+<div data-react-island="catalog" data-props-id="catalog-props">
+    <section class="catalog-layout">
+        <aside class="filters">
+            <h1>Каталог дверей</h1>
+            <details class="filter-panel">
+                <summary>
+                    <span>Фильтры</span>
+                    <span class="filter-toggle-icon" aria-hidden="true"></span>
+                </summary>
+                <form class="filter-form">
+                    <label>
+                        Поиск
+                        <input type="search" name="q" placeholder="Название, артикул, отделка">
+                    </label>
+                    <label>
+                        Категория
+                        <select name="category">
+                            <option value="">Все категории</option>
+                            {% for category in categories %}
+                                <option value="{{ category.slug }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Тип открывания
+                        <select name="opening_type">
+                            <option value="">Любой</option>
+                            {% for value, label in opening_types %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Материал
+                        <select name="material">
+                            <option value="">Любой</option>
+                            {% for material in materials %}
+                                <option value="{{ material }}">{{ material }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Цвет
+                        <select name="color">
+                            <option value="">Любой</option>
+                            {% for color in colors %}
+                                <option value="{{ color }}">{{ color }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <div class="price-row">
+                        <label>
+                            Цена от
+                            <input type="number" name="min_price" min="0" step="1000">
+                        </label>
+                        <label>
+                            Цена до
+                            <input type="number" name="max_price" min="0" step="1000">
+                        </label>
+                    </div>
+                    <label class="check-row">
+                        <input type="checkbox" name="in_stock" value="1">
+                        Только в наличии
+                    </label>
+                    <label>
+                        Сортировка
+                        <select name="ordering">
+                            <option value="name">По названию</option>
+                            <option value="price">Цена по возрастанию</option>
+                            <option value="-price">Цена по убыванию</option>
+                            <option value="-created_at">Новые сначала</option>
+                        </select>
+                    </label>
+                </form>
+            </details>
+        </aside>
+
+        <section class="catalog-results">
+            <div class="product-grid">
+                {% for product in products %}
+                    <article class="product-card">
+                        <a class="product-image" href="{{ product.get_absolute_url }}">
+                            {% if product.display_image %}
+                                <img src="{{ product.display_image }}" alt="{{ product.name }}">
+                            {% else %}
+                                <span>{{ product.category.name }}</span>
+                            {% endif %}
+                            <span class="stock-badge {% if product.available_quantity > 0 %}is-available{% else %}is-empty{% endif %}">
+                                {% if product.available_quantity > 0 %}В наличии{% else %}Под заказ{% endif %}
+                            </span>
+                        </a>
+                        <div class="product-card-body">
+                            <p class="eyebrow">{{ product.category.name }}</p>
+                            <h2><a href="{{ product.get_absolute_url }}">{{ product.name }}</a></h2>
+                            <div class="product-actions">
+                                <p>{{ product.material }} · {{ product.color }} · {{ product.finish }}</p>
+                                <div class="product-meta">
+                                    <strong>{{ product.price|floatformat:0 }} руб.</strong>
+                                    <span>{{ product.available_quantity }} шт.</span>
+                                </div>
+                                <form method="post" action="{% url 'add_to_cart' %}" class="add-cart-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="product_id" value="{{ product.pk }}">
+                                    <input type="number" name="quantity" value="1" min="1" max="{{ product.available_quantity }}">
+                                    <button class="button primary" type="submit" {% if product.available_quantity == 0 %}disabled{% endif %}>В корзину</button>
+                                </form>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    </section>
+</div>
+{% endblock %}

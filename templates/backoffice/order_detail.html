@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Заказ #{{ order.pk }}{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Заказ #{{ order.pk }}</p>
+            <h1>{{ order.customer_name }}</h1>
+        </div>
+        <div class="actions">
+            <a class="button ghost" href="{% url 'backoffice_orders' %}">К списку</a>
+            <a class="button ghost" href="{{ package_url }}">PDF ZIP</a>
+        </div>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <div class="info-grid">
+        <div><span>Статус</span><strong>{{ order.get_status_display }}</strong></div>
+        <div><span>Оплата</span><strong>{{ order.get_payment_status_display }}</strong></div>
+        <div><span>Метод</span><strong>{{ order.get_payment_method_display }}</strong></div>
+        <div><span>Сумма</span><strong>{{ order.subtotal|floatformat:0 }} руб.</strong></div>
+        <div><span>Резерв</span><strong>{% if order.stock_reserved %}Есть{% else %}Нет{% endif %}</strong></div>
+        <div><span>Платеж</span><strong>{{ order.payment_reference|default:"-" }}</strong></div>
+    </div>
+
+    <section class="office-panel">
+        <div class="office-panel-head">
+            <h2>Быстрые действия</h2>
+        </div>
+        <div class="office-action-grid">
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="reserve"><button class="button ghost" type="submit">Зарезервировать склад</button></form>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="release"><button class="button ghost" type="submit">Снять резерв</button></form>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="mark_paid"><button class="button primary" type="submit">Провести оплату</button></form>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="mark_failed"><button class="button ghost" type="submit">Отказать оплату</button></form>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="confirm"><button class="button primary" type="submit">Подтвердить и списать</button></form>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="cancel"><button class="button ghost danger" type="submit">Отменить</button></form>
+        </div>
+    </section>
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head">
+                <h2>Данные заказа</h2>
+            </div>
+            <form class="office-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save">
+                <div class="field-grid">
+                    {% for field in form %}
+                        <label class="{% if field.name == 'company_address' or field.name == 'delivery_address' or field.name == 'comment' or field.name == 'payment_comment' %}field-wide{% endif %}">
+                            {{ field.label }}
+                            {{ field }}
+                            {{ field.errors }}
+                        </label>
+                    {% endfor %}
+                </div>
+                <button class="button primary" type="submit">Сохранить заказ</button>
+            </form>
+        </section>
+
+        <section class="office-panel">
+            <div class="office-panel-head">
+                <h2>Документы</h2>
+            </div>
+            <div class="document-grid office-document-grid">
+                {% for document in documents %}
+                    <article class="document-card">
+                        <a class="document-main-link" href="{{ document.pdf_url }}" target="_blank" rel="noopener">
+                            <span>{{ document.label }}</span>
+                            <strong>PDF</strong>
+                        </a>
+                        <a href="{{ document.download_url }}">Скачать</a>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <section class="office-panel">
+        <div class="office-panel-head">
+            <h2>Состав заказа</h2>
+        </div>
+        <div class="office-table-wrap">
+            <table class="office-table">
+                <thead><tr><th>Артикул</th><th>Товар</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead>
+                <tbody>
+                    {% for item in order.items.all %}
+                        <tr>
+                            <td>{{ item.product.sku }}</td>
+                            <td><a href="{% url 'backoffice_product_edit' item.product.pk %}">{{ item.product.name }}</a></td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.unit_price|floatformat:0 }} руб.</td>
+                            <td>{{ item.line_total|floatformat:0 }} руб.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="office-panel">
+        <div class="office-panel-head">
+            <h2>Платежные операции</h2>
+        </div>
+        <div class="office-table-wrap">
+            <table class="office-table">
+                <thead><tr><th>Дата</th><th>Операция</th><th>Статус</th><th>Сумма</th><th>Ошибка</th></tr></thead>
+                <tbody>
+                    {% for transaction in order.payment_transactions.all %}
+                        <tr>
+                            <td>{{ transaction.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>{{ transaction.reference }}</td>
+                            <td>{{ transaction.get_status_display }}</td>
+                            <td>{{ transaction.amount|floatformat:0 }} руб.</td>
+                            <td>{{ transaction.error_message|default:"-" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">Платежей пока нет.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}

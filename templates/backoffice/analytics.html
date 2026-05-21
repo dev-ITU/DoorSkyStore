@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Аналитика{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Backoffice</p>
+            <h1>Аналитика</h1>
+        </div>
+        <div class="actions">
+            <a class="button ghost" href="{% url 'sales_report_xlsx' %}">Продажи XLSX</a>
+            <a class="button ghost" href="{% url 'stock_report_xlsx' %}">Склад XLSX</a>
+        </div>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <nav class="office-periods" aria-label="Период аналитики">
+        {% for value, label in period_choices %}
+            <a class="{% if period == value %}is-active{% endif %}" href="?period={{ value }}">{{ label }}</a>
+        {% endfor %}
+    </nav>
+
+    <div class="metric-grid">
+        <div><span>Заказов</span><strong>{{ total_orders }}</strong></div>
+        <div><span>Оплачены</span><strong>{{ paid_count }}</strong></div>
+        <div><span>Выручка</span><strong>{{ revenue|floatformat:0 }} руб.</strong></div>
+        <div><span>Средний чек</span><strong>{{ average_order|floatformat:0 }} руб.</strong></div>
+        <div><span>Конверсия в оплату</span><strong>{{ conversion }}%</strong></div>
+        <div><span>Продано позиций</span><strong>{{ products_sold }}</strong></div>
+        <div><span>Доступно на складе</span><strong>{{ stock.available }}</strong></div>
+        <div><span>Низкие остатки</span><strong>{{ stock.low_count }}</strong></div>
+    </div>
+
+    <section class="office-panel">
+        <div class="office-panel-head">
+            <h2>Динамика заказов и выручки</h2>
+        </div>
+        <div class="analytics-bars">
+            {% for row in daily_rows %}
+                <div class="analytics-row">
+                    <span>{{ row.day|date:"d.m" }}</span>
+                    <div>
+                        <i style="width: {{ row.revenue_width }}%"></i>
+                        <b style="width: {{ row.orders_width }}%"></b>
+                    </div>
+                    <strong>{{ row.revenue|default:0|floatformat:0 }} руб. · {{ row.orders_count }}</strong>
+                </div>
+            {% empty %}
+                <p class="empty-state">За выбранный период заказов нет.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Статусы заказов</h2></div>
+            {% include "backoffice/partials/analytics_mix_table.html" with rows=status_rows value_field="total" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Статусы оплаты</h2></div>
+            {% include "backoffice/partials/analytics_mix_table.html" with rows=payment_rows value_field="total" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Способы оплаты</h2></div>
+            {% include "backoffice/partials/analytics_mix_table.html" with rows=payment_method_rows value_field="total" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Типы покупателей</h2></div>
+            {% include "backoffice/partials/analytics_mix_table.html" with rows=customer_rows value_field="total" %}
+        </section>
+    </div>
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Топ товаров</h2></div>
+            <div class="office-table-wrap">
+                <table class="office-table">
+                    <thead><tr><th>Товар</th><th>Кол-во</th><th>Выручка</th><th></th></tr></thead>
+                    <tbody>
+                        {% for row in top_products %}
+                            <tr>
+                                <td><strong>{{ row.product__name }}</strong><br><span>{{ row.product__sku }}</span></td>
+                                <td>{{ row.quantity }}</td>
+                                <td>{{ row.revenue|floatformat:0 }} руб.</td>
+                                <td><div class="mini-bar"><span style="width: {{ row.width }}%"></span></div></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4">Продаж пока нет.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Категории по выручке</h2></div>
+            <div class="office-table-wrap">
+                <table class="office-table">
+                    <thead><tr><th>Категория</th><th>Заказы</th><th>Кол-во</th><th>Выручка</th><th></th></tr></thead>
+                    <tbody>
+                        {% for row in category_sales %}
+                            <tr>
+                                <td>{{ row.product__category__name }}</td>
+                                <td>{{ row.orders_count }}</td>
+                                <td>{{ row.quantity }}</td>
+                                <td>{{ row.revenue|floatformat:0 }} руб.</td>
+                                <td><div class="mini-bar"><span style="width: {{ row.width }}%"></span></div></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">Продаж по категориям пока нет.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <section class="office-panel">
+        <div class="office-panel-head">
+            <h2>Склад по категориям</h2>
+            <a href="{% url 'backoffice_catalog' %}?stock_state=low">Низкие остатки</a>
+        </div>
+        <div class="office-table-wrap">
+            <table class="office-table">
+                <thead><tr><th>Категория</th><th>Товаров</th><th>На складе</th><th>В резерве</th><th>Доступно</th></tr></thead>
+                <tbody>
+                    {% for row in category_stock %}
+                        <tr>
+                            <td>{{ row.product__category__name }}</td>
+                            <td>{{ row.products }}</td>
+                            <td>{{ row.quantity|default:0 }}</td>
+                            <td>{{ row.reserved|default:0 }}</td>
+                            <td>{{ row.available }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">Складских данных нет.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}

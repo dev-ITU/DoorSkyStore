@@ -1,0 +1,116 @@
+{% load static vite %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>DoorSky | {% block title %}Магазин дверей{% endblock %}</title>
+    <link rel="icon" type="image/png" sizes="134x134" href="{% static 'favicon.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% vite_asset 'src/main.jsx' %}
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="{% url 'catalog' %}" aria-label="DoorSkyStore">
+            <img class="brand-logo" src="{% static 'logo.png' %}" alt="DoorSkyStore">
+        </a>
+        <nav class="site-nav">
+            <a href="{% url 'catalog' %}">Каталог</a>
+            <a href="{% url 'cart' %}">Корзина</a>
+            {% if request.user.is_staff %}
+                <a href="{% url 'backoffice_dashboard' %}">Панель</a>
+            {% endif %}
+            {% if request.user.is_authenticated %}
+                <form method="post" action="{% url 'logout' %}" class="inline-form">
+                    {% csrf_token %}
+                    <button class="link-button" type="submit">Выйти</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}">Войти</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <script>
+    (() => {
+        function clampNumberInput(input) {
+            if (!(input instanceof HTMLInputElement) || input.type !== 'number' || input.value === '') {
+                return;
+            }
+            const value = Number(input.value);
+            if (!Number.isFinite(value)) {
+                return;
+            }
+            const min = input.min === '' ? null : Number(input.min);
+            const max = input.max === '' ? null : Number(input.max);
+            let nextValue = Math.trunc(value);
+            if (Number.isFinite(min)) {
+                nextValue = Math.max(nextValue, min);
+            }
+            if (Number.isFinite(max)) {
+                nextValue = Math.min(nextValue, max);
+            }
+            if (String(nextValue) !== input.value) {
+                input.value = String(nextValue);
+            }
+        }
+
+        ['input', 'change', 'blur'].forEach((eventName) => {
+            document.addEventListener(eventName, (event) => {
+                clampNumberInput(event.target);
+            }, true);
+        });
+    })();
+    </script>
+    <script>
+    (() => {
+        const path = window.location.pathname;
+        if (path.startsWith('/office/') || path.startsWith('/admin/') || path.startsWith('/accounts/')) {
+            return;
+        }
+        const startedAt = performance.now();
+        const endpoint = '/_analytics/client/';
+        function send(eventName) {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+            const payload = {
+                event: eventName,
+                path,
+                full_path: `${window.location.pathname}${window.location.search}`,
+                viewport_width: window.innerWidth,
+                viewport_height: window.innerHeight,
+                screen_width: window.screen ? window.screen.width : null,
+                screen_height: window.screen ? window.screen.height : null,
+                device_pixel_ratio: window.devicePixelRatio || 1,
+                language: navigator.language || '',
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+                color_scheme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+                connection_type: connection.effectiveType || connection.type || '',
+                engagement_seconds: Math.max(0, Math.round((performance.now() - startedAt) / 1000)),
+            };
+            const body = JSON.stringify(payload);
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(endpoint, new Blob([body], {type: 'application/json'}));
+                return;
+            }
+            fetch(endpoint, {method: 'POST', body, keepalive: true, headers: {'Content-Type': 'application/json'}}).catch(() => {});
+        }
+        window.addEventListener('load', () => send('page_ready'), {once: true});
+        window.addEventListener('pagehide', () => send('page_hide'));
+    })();
+    </script>
+    {% block extra_body %}{% endblock %}
+</body>
+</html>

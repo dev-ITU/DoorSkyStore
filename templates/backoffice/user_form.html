@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_create %}Новый пользователь{% else %}{{ managed_user.username }}{% endif %}{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Backoffice</p>
+            <h1>{% if is_create %}Новый пользователь{% else %}{{ managed_user.username }}{% endif %}</h1>
+        </div>
+        <a class="button ghost" href="{% url 'backoffice_users' %}">К пользователям</a>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <form class="office-form office-panel" method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <div class="office-form-section">
+            <h2>Профиль</h2>
+            <div class="field-grid">
+                <label>{{ form.username.label }}{{ form.username }}{{ form.username.errors }}</label>
+                <label>{{ form.email.label }}{{ form.email }}{{ form.email.errors }}</label>
+                <label>{{ form.first_name.label }}{{ form.first_name }}{{ form.first_name.errors }}</label>
+                <label>{{ form.last_name.label }}{{ form.last_name }}{{ form.last_name.errors }}</label>
+            </div>
+        </div>
+
+        <div class="office-form-section">
+            <h2>{% if is_create %}Пароль{% else %}Смена пароля{% endif %}</h2>
+            <div class="field-grid">
+                {% if is_create %}
+                    <label>{{ form.password1.label }}{{ form.password1 }}{{ form.password1.errors }}</label>
+                    <label>{{ form.password2.label }}{{ form.password2 }}{{ form.password2.errors }}</label>
+                {% else %}
+                    <label>{{ form.new_password1.label }}{{ form.new_password1 }}{{ form.new_password1.errors }}</label>
+                    <label>{{ form.new_password2.label }}{{ form.new_password2 }}{{ form.new_password2.errors }}</label>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="office-form-section">
+            <h2>Доступ</h2>
+            <div class="office-access-grid">
+                <label class="office-check">{{ form.is_active }} {{ form.is_active.label }}{{ form.is_active.errors }}</label>
+                <label class="office-check">{{ form.is_staff }} {{ form.is_staff.label }}{{ form.is_staff.errors }}</label>
+                <label class="office-check">{{ form.is_superuser }} {{ form.is_superuser.label }}{{ form.is_superuser.errors }}</label>
+            </div>
+        </div>
+
+        <div class="office-form-section">
+            <h2>Роли и права</h2>
+            <div class="office-permission-grid">
+                <label>
+                    {{ form.groups.label }}
+                    {{ form.groups }}
+                    {{ form.groups.errors }}
+                    <span class="helptext">Роли задают готовый набор прав для менеджера, склада, контента и аналитика.</span>
+                </label>
+                <label>
+                    {{ form.user_permissions.label }}
+                    {{ form.user_permissions }}
+                    {{ form.user_permissions.errors }}
+                    <span class="helptext">Точечные права добавляются поверх выбранных ролей.</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="button primary" type="submit">{% if is_create %}Создать пользователя{% else %}Сохранить права{% endif %}</button>
+            <a class="button ghost" href="{% url 'backoffice_users' %}">Отмена</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

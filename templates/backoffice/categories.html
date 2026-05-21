@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Категории{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Backoffice</p>
+            <h1>Категории</h1>
+        </div>
+        <a class="button ghost" href="{% url 'backoffice_catalog' %}">К каталогу</a>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head">
+                <h2>Добавить категорию</h2>
+            </div>
+            <form class="office-form" method="post">
+                {% csrf_token %}
+                <div class="field-grid">
+                    {% for field in form %}
+                        <label class="{% if field.name == 'description' %}field-wide{% endif %}">
+                            {{ field.label }}
+                            {{ field }}
+                            {{ field.errors }}
+                        </label>
+                    {% endfor %}
+                </div>
+                <button class="button primary" type="submit">Сохранить категорию</button>
+            </form>
+        </section>
+
+        <section class="office-panel">
+            <div class="office-panel-head">
+                <h2>Список категорий</h2>
+            </div>
+            <div class="office-table-wrap">
+                <table class="office-table">
+                    <thead><tr><th>Название</th><th>Slug</th><th>Товаров</th><th>Статус</th></tr></thead>
+                    <tbody>
+                        {% for category in categories %}
+                            <tr>
+                                <td>{{ category.name }}</td>
+                                <td>{{ category.slug }}</td>
+                                <td>{{ category.products_count }}</td>
+                                <td>{% if category.is_active %}Активна{% else %}Скрыта{% endif %}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4">Категорий пока нет.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}

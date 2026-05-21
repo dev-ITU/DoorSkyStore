@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Панель управления{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">DoorSky Backoffice</p>
+            <h1>Панель управления</h1>
+        </div>
+        <div class="actions">
+            <a class="button primary" href="{% url 'backoffice_product_create' %}">Добавить товар</a>
+            <a class="button ghost" href="{% url 'backoffice_orders' %}">Заказы</a>
+        </div>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <div class="metric-grid">
+        <div><span>Всего заказов</span><strong>{{ orders_total }}</strong></div>
+        <div><span>Новые</span><strong>{{ orders_new }}</strong></div>
+        <div><span>В работе</span><strong>{{ orders_in_progress }}</strong></div>
+        <div><span>Оплачены</span><strong>{{ orders_paid }}</strong></div>
+        <div><span>Выручка</span><strong>{{ revenue|floatformat:0 }} руб.</strong></div>
+        <div><span>Активных товаров</span><strong>{{ products_active }}</strong></div>
+        <div><span>Всего товаров</span><strong>{{ products_total }}</strong></div>
+        <div><span>Низкие остатки</span><strong>{{ low_stock_count }}</strong></div>
+    </div>
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head">
+                <h2>Новые заказы</h2>
+                <a href="{% url 'backoffice_orders' %}">Все заказы</a>
+            </div>
+            <div class="office-table-wrap">
+                <table class="office-table">
+                    <thead><tr><th>Заказ</th><th>Клиент</th><th>Статус</th><th>Оплата</th><th>Сумма</th></tr></thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                            <tr>
+                                <td><a href="{% url 'backoffice_order_detail' order.pk %}">#{{ order.pk }}</a></td>
+                                <td>{{ order.customer_name }}<br><span>{{ order.customer_phone }}</span></td>
+                                <td><span class="status-pill status-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                                <td><span class="status-pill payment-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span></td>
+                                <td>{{ order.subtotal|floatformat:0 }} руб.</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">Заказов пока нет.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="office-panel">
+            <div class="office-panel-head">
+                <h2>Остатки под контролем</h2>
+                <a href="{% url 'backoffice_catalog' %}?stock_state=low">Показать</a>
+            </div>
+            <div class="office-table-wrap">
+                <table class="office-table">
+                    <thead><tr><th>Артикул</th><th>Товар</th><th>На складе</th><th>Резерв</th></tr></thead>
+                    <tbody>
+                        {% for stock in low_stock %}
+                            <tr>
+                                <td>{{ stock.product.sku }}</td>
+                                <td><a href="{% url 'backoffice_product_edit' stock.product.pk %}">{{ stock.product.name }}</a></td>
+                                <td>{{ stock.quantity }}</td>
+                                <td>{{ stock.reserved_quantity }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4">Критичных остатков нет.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <section class="office-panel">
+        <div class="office-panel-head">
+            <h2>Движение склада</h2>
+            <a href="{% url 'backoffice_catalog' %}">Каталог</a>
+        </div>
+        <div class="office-table-wrap">
+            <table class="office-table">
+                <thead><tr><th>Дата</th><th>Операция</th><th>Товар</th><th>Кол-во</th><th>Основание</th></tr></thead>
+                <tbody>
+                    {% for movement in recent_movements %}
+                        <tr>
+                            <td>{{ movement.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>{{ movement.get_movement_type_display }}</td>
+                            <td>{{ movement.product.sku }}</td>
+                            <td>{{ movement.quantity }}</td>
+                            <td>{{ movement.reference }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">Движений склада пока нет.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}

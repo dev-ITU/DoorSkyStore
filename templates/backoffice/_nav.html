@@ -1,0 +1,30 @@
+<nav class="office-nav" aria-label="Панель управления">
+    <a href="{% url 'backoffice_dashboard' %}">Обзор</a>
+    {% if perms.orders.view_order or perms.catalog.view_stockitem %}
+        <a href="{% url 'backoffice_analytics' %}">Аналитика</a>
+    {% endif %}
+    {% if perms.webanalytics.view_webvisit or perms.webanalytics.view_webpageview %}
+        <a href="{% url 'backoffice_web_analytics' %}">Веб-аналитика</a>
+    {% endif %}
+    {% if perms.orders.view_order %}
+        <a href="{% url 'backoffice_orders' %}">Заказы</a>
+    {% endif %}
+    {% if perms.catalog.view_doorproduct or perms.catalog.change_doorproduct %}
+        <a href="{% url 'backoffice_catalog' %}">Каталог</a>
+    {% endif %}
+    {% if perms.catalog.add_doorproduct %}
+        <a href="{% url 'backoffice_product_create' %}">Новый товар</a>
+    {% endif %}
+    {% if perms.catalog.view_category or perms.catalog.change_category or perms.catalog.add_category %}
+        <a href="{% url 'backoffice_categories' %}">Категории</a>
+    {% endif %}
+    {% if request.user.is_superuser or perms.auth.add_user or perms.auth.change_user %}
+        <a href="{% url 'backoffice_users' %}">Пользователи</a>
+    {% endif %}
+    {% if perms.orders.view_order %}
+        <a href="{% url 'sales_report_xlsx' %}">Продажи XLSX</a>
+    {% endif %}
+    {% if perms.catalog.view_stockitem %}
+        <a href="{% url 'stock_report_xlsx' %}">Склад XLSX</a>
+    {% endif %}
+</nav>

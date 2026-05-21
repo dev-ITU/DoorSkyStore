@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Веб-аналитика{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Backoffice</p>
+            <h1>Веб-аналитика</h1>
+        </div>
+        <a class="button ghost" href="{% url 'backoffice_analytics' %}">Продажи и склад</a>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <nav class="office-periods" aria-label="Период веб-аналитики">
+        {% for value, label in period_choices %}
+            <a class="{% if period == value %}is-active{% endif %}" href="?period={{ value }}">{{ label }}</a>
+        {% endfor %}
+    </nav>
+
+    <div class="metric-grid">
+        <div><span>Просмотры</span><strong>{{ total_views }}</strong></div>
+        <div><span>Визиты</span><strong>{{ total_visits }}</strong></div>
+        <div><span>Посетители</span><strong>{{ unique_visitors }}</strong></div>
+        <div><span>Вернувшиеся</span><strong>{{ returning_visitors }}</strong></div>
+        <div><span>Авторизованные</span><strong>{{ known_users }}</strong></div>
+        <div><span>Глубина</span><strong>{{ views_per_visit }}</strong></div>
+        <div><span>Отказы</span><strong>{{ bounce_rate }}%</strong></div>
+        <div><span>Время на странице</span><strong>{{ avg_engagement|floatformat:0 }} сек.</strong></div>
+    </div>
+
+    <section class="office-panel">
+        <div class="office-panel-head">
+            <h2>Динамика трафика</h2>
+            <span>золото - просмотры, бирюза - визиты</span>
+        </div>
+        <div class="analytics-bars">
+            {% for row in daily_rows %}
+                <div class="analytics-row">
+                    <span>{{ row.day|date:"d.m" }}</span>
+                    <div>
+                        <i style="width: {{ row.views_width }}%"></i>
+                        <b style="width: {{ row.visits_width }}%"></b>
+                    </div>
+                    <strong>{{ row.views_count }} / {{ row.visits_count }} · {{ row.visitors_count }}</strong>
+                </div>
+            {% empty %}
+                <p class="empty-state">Трафика за выбранный период пока нет.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Воронка сайта</h2></div>
+            <div class="web-funnel">
+                {% for row in funnel_rows %}
+                    <div class="web-funnel-row">
+                        <span>{{ row.label }}</span>
+                        <div><i style="width: {{ row.width }}%"></i></div>
+                        <strong>{{ row.count }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Каналы трафика</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=channel_rows title="Канал" %}
+        </section>
+    </div>
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Типы устройств</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=device_type_rows title="Тип" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Устройства</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=device_rows title="Устройство" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Браузеры</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=browser_rows title="Браузер" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Операционные системы</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=os_rows title="ОС" %}
+        </section>
+    </div>
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Страны</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=country_rows title="Страна" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Города</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=city_rows title="Город" %}
+        </section>
+    </div>
+
+    <section class="office-panel">
+        <div class="office-panel-head"><h2>Популярные страницы</h2></div>
+        <div class="office-table-wrap">
+            <table class="office-table">
+                <thead><tr><th>Страница</th><th>Просмотры</th><th>Визиты</th><th>Среднее время</th><th></th></tr></thead>
+                <tbody>
+                    {% for row in top_pages %}
+                        <tr>
+                            <td>{{ row.path }}</td>
+                            <td>{{ row.count }}</td>
+                            <td>{{ row.visits }}</td>
+                            <td>{{ row.avg_engagement|default:0|floatformat:0 }} сек.</td>
+                            <td><div class="mini-bar"><span style="width: {{ row.width }}%"></span></div></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">Просмотров пока нет.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Домены-источники</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=referrer_rows title="Домен" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>UTM source</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=utm_source_rows title="Source" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>UTM campaign</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=utm_campaign_rows title="Campaign" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Размеры viewport</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=screen_rows title="Viewport" %}
+        </section>
+    </div>
+
+    <div class="office-grid">
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Страницы входа</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=landing_rows title="Landing" %}
+        </section>
+        <section class="office-panel">
+            <div class="office-panel-head"><h2>Страницы выхода</h2></div>
+            {% include "backoffice/partials/web_dimension_table.html" with rows=exit_rows title="Exit" %}
+        </section>
+    </div>
+
+    <section class="office-panel">
+        <div class="office-panel-head"><h2>Последние просмотры</h2></div>
+        <div class="office-table-wrap">
+            <table class="office-table">
+                <thead><tr><th>Время</th><th>Страница</th><th>Устройство</th><th>Гео</th><th>Источник</th></tr></thead>
+                <tbody>
+                    {% for view in latest_views %}
+                        <tr>
+                            <td>{{ view.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>{{ view.path }}<br><span>{{ view.viewport_width|default:"-" }}x{{ view.viewport_height|default:"-" }}</span></td>
+                            <td>{{ view.visit.get_device_type_display }} · {{ view.visit.browser }}<br><span>{{ view.visit.os }} · {{ view.visit.device }}</span></td>
+                            <td>{{ view.visit.country|default:"Не определено" }}<br><span>{{ view.visit.city|default:"Город не определен" }}</span></td>
+                            <td>{{ view.visit.get_traffic_channel_display }}<br><span>{{ view.visit.referrer_domain|default:"прямой заход" }}</span></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">Просмотров пока нет.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}

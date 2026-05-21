@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Пользователи{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Backoffice</p>
+            <h1>Пользователи</h1>
+        </div>
+        <a class="button primary" href="{% url 'backoffice_user_create' %}">Создать пользователя</a>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <form class="office-filter-bar office-filter-bar-compact" method="get">
+        <label>
+            Поиск
+            <input name="q" type="search" value="{{ query }}" placeholder="Логин, имя или email">
+        </label>
+        <button class="button primary" type="submit">Найти</button>
+        {% if query %}
+            <a class="button ghost" href="{% url 'backoffice_users' %}">Сбросить</a>
+        {% endif %}
+    </form>
+
+    <section class="office-panel">
+        <div class="office-panel-head">
+            <h2>Учетные записи</h2>
+            <span>{{ page_obj.paginator.count }}</span>
+        </div>
+        <div class="office-table-wrap">
+            <table class="office-table">
+                <thead>
+                    <tr>
+                        <th>Пользователь</th>
+                        <th>Роли</th>
+                        <th>Доступ</th>
+                        <th>Последний вход</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user_item in page_obj %}
+                        <tr>
+                            <td>
+                                <strong>{{ user_item.username }}</strong><br>
+                                <span>{{ user_item.get_full_name|default:user_item.email|default:"Без контактов" }}</span>
+                            </td>
+                            <td>
+                                <div class="office-tag-list">
+                                    {% for group in user_item.groups.all %}
+                                        <span>{{ group.name }}</span>
+                                    {% empty %}
+                                        <span>Без роли</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="office-tag-list">
+                                    {% if user_item.is_superuser %}<span>Суперпользователь</span>{% endif %}
+                                    {% if user_item.is_staff %}<span>Панель</span>{% endif %}
+                                    {% if user_item.is_active %}<span>Активен</span>{% else %}<span>Отключен</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>{{ user_item.last_login|date:"d.m.Y H:i"|default:"Не входил" }}</td>
+                            <td><a class="button ghost" href="{% url 'backoffice_user_edit' user_item.pk %}">Права</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">Пользователи не найдены.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="office-panel">
+        <div class="office-panel-head">
+            <h2>Ролевые группы</h2>
+        </div>
+        <div class="office-role-grid">
+            {% for group in groups %}
+                <div>
+                    <strong>{{ group.name }}</strong>
+                    <span>{{ group.permissions.count }} прав</span>
+                </div>
+            {% empty %}
+                <p class="empty-state">Роли будут созданы автоматически при открытии раздела.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% include "backoffice/_pagination.html" %}
+</section>
+{% endblock %}

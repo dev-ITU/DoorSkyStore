@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<section class="product-detail">
+    <div class="detail-media">
+        {% if product.display_image %}
+            <img src="{{ product.display_image }}" alt="{{ product.name }}">
+        {% else %}
+            <span>{{ product.category.name }}</span>
+        {% endif %}
+    </div>
+    <div class="detail-info">
+        <p class="eyebrow">{{ product.category.name }} · {{ product.sku }}</p>
+        <h1>{{ product.name }}</h1>
+        <p class="lead">{{ product.description }}</p>
+        <dl class="specs">
+            <div><dt>Тип</dt><dd>{{ product.get_opening_type_display }}</dd></div>
+            <div><dt>Материал</dt><dd>{{ product.material }}</dd></div>
+            <div><dt>Цвет</dt><dd>{{ product.color }}</dd></div>
+            <div><dt>Отделка</dt><dd>{{ product.finish }}</dd></div>
+            <div><dt>Ширина</dt><dd>{{ product.width_min_mm }}-{{ product.width_max_mm }} мм</dd></div>
+            <div><dt>Высота</dt><dd>{{ product.height_min_mm }}-{{ product.height_max_mm }} мм</dd></div>
+        </dl>
+        {{ purchase_props|json_script:"purchase-props" }}
+        <div data-react-island="productPurchase" data-props-id="purchase-props">
+            <div class="purchase-panel">
+                <strong>{{ product.price|floatformat:0 }} руб.</strong>
+                <span>Доступно: {{ product.available_quantity }} шт.</span>
+                <form method="post" action="{% url 'add_to_cart' %}" class="add-cart-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.pk }}">
+                    <input type="number" name="quantity" value="1" min="1" max="{{ product.available_quantity }}">
+                    <button class="button primary" type="submit" {% if product.available_quantity == 0 %}disabled{% endif %}>Добавить в корзину</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

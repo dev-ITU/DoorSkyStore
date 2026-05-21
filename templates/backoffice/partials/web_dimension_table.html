@@ -1,0 +1,17 @@
+<div class="office-table-wrap">
+    <table class="office-table web-dimension-table">
+        <thead><tr><th>{{ title|default:"Сегмент" }}</th><th>Кол-во</th><th>Доля</th><th></th></tr></thead>
+        <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.count }}</td>
+                    <td>{{ row.share }}%</td>
+                    <td><div class="mini-bar"><span style="width: {{ row.width }}%"></span></div></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4">Данных пока нет.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
