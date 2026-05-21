@@ -4,6 +4,28 @@
 
 Production: https://doorsky.site
 
+## Скриншоты интерфейса
+
+| Каталог | Карточка товара |
+| --- | --- |
+| <img src="docs/screenshots/01-catalog.png" alt="Каталог дверей" width="100%"> | <img src="docs/screenshots/02-product-detail.png" alt="Карточка товара" width="100%"> |
+
+| Корзина | Оформление заказа |
+| --- | --- |
+| <img src="docs/screenshots/03-cart.png" alt="Корзина" width="100%"> | <img src="docs/screenshots/04-checkout.png" alt="Оформление заказа" width="100%"> |
+
+| Документы заказа | Панель управления |
+| --- | --- |
+| <img src="docs/screenshots/05-order-documents.png" alt="Документы заказа" width="100%"> | <img src="docs/screenshots/06-backoffice-dashboard.png" alt="Панель управления" width="100%"> |
+
+| Каталог в backoffice | Бизнес-аналитика |
+| --- | --- |
+| <img src="docs/screenshots/07-backoffice-catalog.png" alt="Каталог в backoffice" width="100%"> | <img src="docs/screenshots/08-backoffice-analytics.png" alt="Бизнес-аналитика" width="100%"> |
+
+| Веб-аналитика |
+| --- |
+| <img src="docs/screenshots/09-backoffice-web-analytics.png" alt="Веб-аналитика" width="100%"> |
+
 ## Статус
 
 - Production-домен подключен к серверу через Caddy и HTTPS.
