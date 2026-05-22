@@ -18,6 +18,15 @@ def _generate_email_code():
     return f'{secrets.randbelow(1_000_000):06d}'
 
 
+def email_delivery_is_configured():
+    email_settings = EmailClientSettings.objects.filter(pk=1).first()
+    if email_settings and email_settings.is_configured:
+        return True
+    if settings.EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend':
+        return bool(settings.EMAIL_HOST)
+    return True
+
+
 def send_configured_email(subject, message, recipient_list, from_email=None):
     email_settings = EmailClientSettings.objects.filter(pk=1).first()
     if email_settings and email_settings.is_configured:
@@ -70,6 +79,11 @@ def send_email_verification_code(user, resend=False):
         code_hash=make_password(code),
         expires_at=timezone.now() + timedelta(minutes=EMAIL_CODE_TTL_MINUTES),
     )
+    if not email_delivery_is_configured():
+        verification.preview_code = code
+        verification.delivery_skipped = True
+        return verification, True
+
     send_configured_email(
         subject='Код подтверждения DoorSky',
         message=(
@@ -79,6 +93,7 @@ def send_email_verification_code(user, resend=False):
         ),
         recipient_list=[email],
     )
+    verification.delivery_skipped = False
     return verification, True
 
 

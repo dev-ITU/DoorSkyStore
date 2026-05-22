@@ -19,7 +19,7 @@ from .services import (
 
 def _send_verification_message(request, user, resend=False):
     try:
-        _, sent = send_email_verification_code(user, resend=resend)
+        verification, sent = send_email_verification_code(user, resend=resend)
     except ValidationError as exc:
         messages.error(request, exc.messages[0])
         return False
@@ -27,7 +27,13 @@ def _send_verification_message(request, user, resend=False):
         messages.error(request, 'Не удалось отправить код. Проверьте email или попробуйте позже.')
         return False
 
-    if sent:
+    preview_code = getattr(verification, 'preview_code', None)
+    if preview_code and getattr(verification, 'delivery_skipped', False):
+        messages.warning(
+            request,
+            f'Почтовый клиент не настроен. Код подтверждения: {preview_code}',
+        )
+    elif sent:
         messages.success(request, f'Код подтверждения отправлен на {user.email}.')
     else:
         messages.info(request, 'Активный код уже отправлен. Проверьте почту.')

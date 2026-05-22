@@ -49,6 +49,26 @@ class CustomerAccountTests(TestCase):
         self.assertEqual(CustomerEmailVerification.objects.filter(user=user, email='buyer@example.com').count(), 1)
         self.assertEqual(len(mail.outbox), 1)
 
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend', EMAIL_HOST='')
+    def test_registration_shows_verification_code_when_email_is_not_configured(self):
+        response = self.client.post(
+            reverse('register'),
+            {
+                'username': 'no-mail',
+                'full_name': 'Нет Почты',
+                'email': 'no-mail@example.com',
+                'phone': '+79990000999',
+                'password1': 'StrongPass12345',
+                'password2': 'StrongPass12345',
+            },
+            follow=True,
+        )
+
+        self.assertContains(response, 'Почтовый клиент не настроен. Код подтверждения:')
+        self.assertRegex(response.content.decode(), r'Код подтверждения: \d{6}')
+        user = get_user_model().objects.get(username='no-mail')
+        self.assertEqual(CustomerEmailVerification.objects.filter(user=user, email='no-mail@example.com').count(), 1)
+
     def test_customer_can_login_with_email(self):
         get_user_model().objects.create_user(
             username='email-login',
