@@ -234,7 +234,14 @@ class CustomerAccountTests(TestCase):
         self.assertEqual(address.address, 'Тюмень, Республики 10')
         self.assertTrue(address.is_default)
         self.assertEqual(profile.default_address, address)
-        self.assertContains(self.client.get(reverse('account_orders')), 'Заказ')
+        orders_response = self.client.get(reverse('account_orders'))
+        self.assertContains(orders_response, 'Заказ')
+        self.assertContains(orders_response, 'Чек PDF')
+        self.assertContains(orders_response, 'Накладная PDF')
+
+        dashboard_response = self.client.get(reverse('account_dashboard'))
+        self.assertContains(dashboard_response, 'История и документы')
+        self.assertContains(dashboard_response, 'ZIP')
 
     def test_customer_cannot_see_foreign_order_in_history(self):
         owner = get_user_model().objects.create_user(username='owner', password='StrongPass12345')

@@ -26,38 +26,50 @@
         </div>
     {% endif %}
 
+    <div class="account-hero">
+        <div>
+            <p class="eyebrow">Кабинет покупателя</p>
+            <h2>{{ profile.full_name|default:request.user.get_username }}</h2>
+            <p>{{ request.user.email }}{% if profile.phone %} · {{ profile.phone }}{% endif %}</p>
+        </div>
+        <div class="account-hero-side">
+            <span>Документы по заказам</span>
+            <strong>PDF и ZIP</strong>
+        </div>
+    </div>
+
     <div class="metric-grid">
         <div><span>Всего заказов</span><strong>{{ orders_total }}</strong></div>
         <div><span>Активные</span><strong>{{ orders_active }}</strong></div>
         <div><span>Оплаченные</span><strong>{{ orders_paid }}</strong></div>
+        <div><span>Ожидают оплаты</span><strong>{{ orders_waiting_payment }}</strong></div>
+        <div><span>Сумма заказов</span><strong>{{ orders_sum|floatformat:0 }} руб.</strong></div>
         <div><span>Адресов доставки</span><strong>{{ addresses_total }}</strong></div>
     </div>
 
-    <div class="account-grid">
-        <section class="account-panel">
-            <div class="office-panel-head">
+    <section class="account-panel account-history-panel">
+        <div class="office-panel-head">
+            <div>
+                <p class="eyebrow">История и документы</p>
                 <h2>Последние заказы</h2>
-                <a href="{% url 'account_orders' %}">Все заказы</a>
             </div>
-            <div class="account-list">
-                {% for order in recent_orders %}
-                    <article class="account-row">
-                        <div>
-                            <p class="eyebrow">Заказ #{{ order.pk }}</p>
-                            <h2>{{ order.get_status_display }}</h2>
-                            <p>{{ order.created_at|date:"d.m.Y H:i" }} · {{ order.get_payment_status_display }}</p>
-                        </div>
-                        <div class="account-row-side">
-                            <strong>{{ order.subtotal|floatformat:0 }} руб.</strong>
-                            <a class="button ghost" href="{{ order.get_absolute_url }}">Открыть</a>
-                        </div>
-                    </article>
-                {% empty %}
-                    <p class="empty-state">Заказов пока нет.</p>
-                {% endfor %}
-            </div>
-        </section>
+            <a href="{% url 'account_orders' %}">Вся история</a>
+        </div>
+        <div class="account-order-list">
+            {% for order in recent_orders %}
+                {% include "customers/_order_card.html" with order=order %}
+            {% empty %}
+                <div class="account-empty-state">
+                    <p class="eyebrow">История пока пуста</p>
+                    <h2>Заказы появятся здесь после оформления</h2>
+                    <p>В кабинете будут доступны статусы, состав заказа, чек, счет, накладная, акт и ZIP-архив документов.</p>
+                    <a class="button primary" href="{% url 'catalog' %}">Перейти в каталог</a>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
 
+    <div class="account-grid">
         <section class="account-panel">
             <div class="office-panel-head">
                 <h2>Адреса доставки</h2>

@@ -2,10 +2,13 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from orders.models import Order
+from reports.documents import DOCUMENT_TYPES
 
 from .forms import CustomerProfileForm, CustomerRegistrationForm, DeliveryAddressForm, EmailVerificationForm
 from .models import DeliveryAddress
@@ -15,6 +18,45 @@ from .services import (
     set_default_address,
     verify_email_code,
 )
+
+
+ACCOUNT_DOCUMENT_TYPES = tuple(DOCUMENT_TYPES)
+
+
+def _decorate_orders_for_account(orders):
+    decorated_orders = list(orders)
+    for order in decorated_orders:
+        order.account_documents = [
+            {
+                'type': document_type,
+                'label': label,
+                'pdf_url': reverse(
+                    'order_public_document_pdf',
+                    kwargs={
+                        'pk': order.pk,
+                        'public_key': order.public_key,
+                        'document_type': document_type,
+                    },
+                ),
+                'download_url': (
+                    reverse(
+                        'order_public_document_pdf',
+                        kwargs={
+                            'pk': order.pk,
+                            'public_key': order.public_key,
+                            'document_type': document_type,
+                        },
+                    )
+                    + '?download=1'
+                ),
+            }
+            for document_type, label in ACCOUNT_DOCUMENT_TYPES
+        ]
+        order.documents_zip_url = reverse(
+            'order_public_documents_zip',
+            kwargs={'pk': order.pk, 'public_key': order.public_key},
+        )
+    return decorated_orders
 
 
 def _send_verification_message(request, user, resend=False):
@@ -63,13 +105,17 @@ def dashboard(request):
         .prefetch_related('items__product')
         .order_by('-created_at')
     )
+    recent_orders = _decorate_orders_for_account(orders[:5])
     context = {
         'profile': profile,
         'email_verified': profile.is_email_verified,
         'orders_total': orders.count(),
         'orders_paid': orders.filter(payment_status=Order.PAYMENT_PAID).count(),
         'orders_active': orders.exclude(status__in=[Order.STATUS_COMPLETED, Order.STATUS_CANCELLED]).count(),
-        'recent_orders': orders[:5],
+        'orders_waiting_payment': orders.filter(payment_status__in=[Order.PAYMENT_WAITING, Order.PAYMENT_FAILED]).count(),
+        'orders_sum': orders.exclude(status=Order.STATUS_CANCELLED).aggregate(total=Sum('subtotal'))['total'] or 0,
+        'recent_orders': recent_orders,
+        'last_order': recent_orders[0] if recent_orders else None,
         'addresses_total': request.user.delivery_addresses.count(),
         'addresses': request.user.delivery_addresses.all()[:4],
     }
@@ -132,7 +178,7 @@ def orders(request):
         .prefetch_related('items__product')
         .order_by('-created_at')
     )
-    return render(request, 'customers/orders.html', {'orders': user_orders})
+    return render(request, 'customers/orders.html', {'orders': _decorate_orders_for_account(user_orders)})
 
 
 @login_required

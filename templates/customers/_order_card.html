@@ -1,0 +1,45 @@
+<article class="account-order-card">
+    <div class="account-order-top">
+        <div>
+            <p class="eyebrow">Заказ #{{ order.pk }} · {{ order.created_at|date:"d.m.Y H:i" }}</p>
+            <h2>{{ order.get_status_display }}</h2>
+        </div>
+        <div class="account-order-total">
+            <span>{{ order.get_payment_status_display }}</span>
+            <strong>{{ order.subtotal|floatformat:0 }} руб.</strong>
+        </div>
+    </div>
+
+    <div class="account-order-meta">
+        <span>{{ order.get_payment_method_display }}</span>
+        <span>{{ order.items.count }} поз.</span>
+        {% if order.payment_reference %}<span>{{ order.payment_reference }}</span>{% endif %}
+    </div>
+
+    <div class="account-order-items">
+        {% for item in order.items.all|slice:":3" %}
+            <div>
+                <span>{{ item.product.sku }}</span>
+                <strong>{{ item.product.name }}</strong>
+                <em>{{ item.quantity }} шт. · {{ item.line_total|floatformat:0 }} руб.</em>
+            </div>
+        {% endfor %}
+        {% if order.items.count > 3 %}
+            <div><strong>Еще позиции в заказе</strong><em>Откройте заказ для полного состава.</em></div>
+        {% endif %}
+    </div>
+
+    <div class="account-document-strip" aria-label="Документы заказа">
+        {% for document in order.account_documents %}
+            <a href="{{ document.pdf_url }}" target="_blank" rel="noopener">{{ document.label }} PDF</a>
+        {% endfor %}
+        <a href="{{ order.documents_zip_url }}">ZIP</a>
+    </div>
+
+    <div class="account-order-actions">
+        <a class="button ghost" href="{{ order.get_absolute_url }}">Открыть заказ</a>
+        {% if order.can_pay %}
+            <a class="button primary" href="{{ order.get_payment_url }}">Оплатить</a>
+        {% endif %}
+    </div>
+</article>

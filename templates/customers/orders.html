@@ -13,22 +13,25 @@
     </div>
     {% include "customers/_account_nav.html" %}
 
-    <div class="account-list">
+    <section class="account-panel account-history-panel">
+        <div class="office-panel-head">
+            <div>
+                <p class="eyebrow">История покупателя</p>
+                <h2>Заказы, чеки и документы</h2>
+            </div>
+        </div>
+        <div class="account-order-list">
         {% for order in orders %}
-            <article class="account-row">
-                <div>
-                    <p class="eyebrow">Заказ #{{ order.pk }} · {{ order.created_at|date:"d.m.Y H:i" }}</p>
-                    <h2>{{ order.get_status_display }}</h2>
-                    <p>{{ order.items.count }} поз. · {{ order.get_payment_status_display }} · {{ order.get_payment_method_display }}</p>
-                </div>
-                <div class="account-row-side">
-                    <strong>{{ order.subtotal|floatformat:0 }} руб.</strong>
-                    <a class="button ghost" href="{{ order.get_absolute_url }}">Документы и оплата</a>
-                </div>
-            </article>
+            {% include "customers/_order_card.html" with order=order %}
         {% empty %}
-            <p class="empty-state">Заказов пока нет.</p>
+            <div class="account-empty-state">
+                <p class="eyebrow">История пока пуста</p>
+                <h2>Заказов еще нет</h2>
+                <p>После оформления здесь появятся состав заказа, оплата, чек, счет, накладная, акт и ZIP-архив.</p>
+                <a class="button primary" href="{% url 'catalog' %}">Перейти в каталог</a>
+            </div>
         {% endfor %}
-    </div>
+        </div>
+    </section>
 </section>
 {% endblock %}

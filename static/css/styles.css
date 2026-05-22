@@ -1928,6 +1928,54 @@ tr:last-child td {
     gap: 16px;
 }
 
+.account-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 0.34fr);
+    gap: 16px;
+    align-items: stretch;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(72, 185, 167, 0.12), transparent 38%),
+        linear-gradient(90deg, rgba(215, 179, 106, 0.06), transparent 64%),
+        var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.account-hero h2 {
+    margin-bottom: 6px;
+    font-size: 28px;
+}
+
+.account-hero p {
+    margin-bottom: 0;
+    color: var(--muted);
+}
+
+.account-hero-side {
+    display: grid;
+    align-content: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.account-hero-side span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.account-hero-side strong {
+    color: var(--champagne);
+    font-size: 24px;
+}
+
 .account-nav {
     display: flex;
     flex-wrap: wrap;
@@ -2011,6 +2059,129 @@ tr:last-child td {
 .account-list {
     display: grid;
     gap: 12px;
+}
+
+.account-history-panel {
+    gap: 16px;
+}
+
+.account-order-list {
+    display: grid;
+    gap: 14px;
+}
+
+.account-order-card {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 40%),
+        rgba(255, 255, 255, 0.02);
+}
+
+.account-order-top,
+.account-order-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.account-order-top h2 {
+    margin-top: 3px;
+    font-size: 22px;
+}
+
+.account-order-total {
+    display: grid;
+    gap: 4px;
+    justify-items: end;
+    text-align: right;
+}
+
+.account-order-total span,
+.account-order-meta span,
+.account-order-items span,
+.account-order-items em {
+    color: var(--muted);
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 800;
+}
+
+.account-order-total strong {
+    font-size: 24px;
+}
+
+.account-order-meta,
+.account-document-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.account-order-meta span,
+.account-document-strip a {
+    display: inline-flex;
+    min-height: 28px;
+    align-items: center;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.account-document-strip a {
+    color: var(--champagne);
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.account-document-strip a:hover {
+    border-color: rgba(72, 185, 167, 0.55);
+    color: var(--accent);
+}
+
+.account-order-items {
+    display: grid;
+    gap: 8px;
+}
+
+.account-order-items > div {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.account-order-items strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.account-empty-state {
+    display: grid;
+    justify-items: start;
+    gap: 10px;
+    min-width: 0;
+    padding: 22px;
+    border: 1px dashed rgba(215, 179, 106, 0.36);
+    border-radius: 8px;
+    background: rgba(215, 179, 106, 0.06);
+}
+
+.account-empty-state p {
+    max-width: 720px;
+    margin-bottom: 0;
+    color: var(--muted);
 }
 
 .account-row {
@@ -2133,6 +2304,7 @@ tr:last-child td {
     .office-grid,
     .account-grid,
     .address-grid,
+    .account-hero,
     .office-action-grid,
     .office-permission-grid {
         grid-template-columns: 1fr;
@@ -2271,6 +2443,22 @@ tr:last-child td {
 
     .account-row {
         grid-template-columns: 1fr;
+    }
+
+    .account-order-top,
+    .account-order-actions {
+        display: grid;
+        justify-content: stretch;
+    }
+
+    .account-order-total {
+        justify-items: start;
+        text-align: left;
+    }
+
+    .account-order-items > div {
+        grid-template-columns: 1fr;
+        gap: 4px;
     }
 
     .account-row-side {
