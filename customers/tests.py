@@ -49,6 +49,23 @@ class CustomerAccountTests(TestCase):
         self.assertEqual(CustomerEmailVerification.objects.filter(user=user, email='buyer@example.com').count(), 1)
         self.assertEqual(len(mail.outbox), 1)
 
+    def test_customer_can_login_with_email(self):
+        get_user_model().objects.create_user(
+            username='email-login',
+            email='login@example.com',
+            password='StrongPass12345',
+        )
+
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': 'login@example.com',
+                'password': 'StrongPass12345',
+            },
+        )
+
+        self.assertRedirects(response, reverse('catalog'))
+
     def test_customer_can_verify_email_with_code(self):
         self.client.post(
             reverse('register'),

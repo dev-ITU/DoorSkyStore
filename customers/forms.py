@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
@@ -48,12 +49,30 @@ class CustomerRegistrationForm(UserCreationForm):
 
 
 class CustomerAuthenticationForm(AuthenticationForm):
-    username = forms.CharField(label='Логин')
+    username = forms.CharField(label='Логин или email')
     password = forms.CharField(
         label='Пароль',
         strip=False,
         widget=forms.PasswordInput(attrs={'autocomplete': 'current-password'}),
     )
+
+    def clean(self):
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        if username is not None and password:
+            auth_username = username.strip()
+            if '@' in auth_username:
+                user = get_user_model().objects.filter(email__iexact=auth_username).only('username').first()
+                if user:
+                    auth_username = user.get_username()
+
+            self.user_cache = authenticate(self.request, username=auth_username, password=password)
+            if self.user_cache is None:
+                raise self.get_invalid_login_error()
+            self.confirm_login_allowed(self.user_cache)
+
+        return self.cleaned_data
 
 
 class CustomerProfileForm(forms.Form):
