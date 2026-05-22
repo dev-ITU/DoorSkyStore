@@ -1933,6 +1933,35 @@ tr:last-child td {
     align-items: start;
 }
 
+.account-alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid rgba(215, 179, 106, 0.28);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(215, 179, 106, 0.11), transparent 46%),
+        var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.account-alert strong {
+    display: block;
+    margin-top: 3px;
+    font-size: 20px;
+}
+
+.checkout-alert {
+    margin-bottom: 14px;
+}
+
+.verification-form {
+    max-width: 520px;
+}
+
 .account-panel,
 .address-card,
 .account-row {
@@ -2252,6 +2281,7 @@ tr:last-child td {
 
     .cart-summary,
     .section-head,
+    .account-alert,
     .pdf-modal-head {
         align-items: stretch;
         flex-direction: column;

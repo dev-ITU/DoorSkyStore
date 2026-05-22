@@ -7,6 +7,15 @@
 <section class="checkout-layout">
     <div>
         <h1>Оформление заказа</h1>
+        {% if request.user.is_authenticated and request.user.customer_profile and not request.user.customer_profile.is_email_verified %}
+            <div class="account-alert checkout-alert">
+                <div>
+                    <p class="eyebrow">Email не подтвержден</p>
+                    <strong>{{ request.user.email }}</strong>
+                </div>
+                <a class="button ghost" href="{% url 'account_email_verify' %}">Подтвердить</a>
+            </div>
+        {% endif %}
         <form method="post" class="form-card checkout-form">
             {% csrf_token %}
             {{ form.non_field_errors }}

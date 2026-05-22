@@ -1,14 +1,37 @@
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from orders.models import Order
 
-from .forms import CustomerProfileForm, CustomerRegistrationForm, DeliveryAddressForm
+from .forms import CustomerProfileForm, CustomerRegistrationForm, DeliveryAddressForm, EmailVerificationForm
 from .models import DeliveryAddress
-from .services import get_customer_profile, set_default_address
+from .services import (
+    get_customer_profile,
+    send_email_verification_code,
+    set_default_address,
+    verify_email_code,
+)
+
+
+def _send_verification_message(request, user, resend=False):
+    try:
+        _, sent = send_email_verification_code(user, resend=resend)
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
+        return False
+    except Exception:
+        messages.error(request, 'Не удалось отправить код. Проверьте email или попробуйте позже.')
+        return False
+
+    if sent:
+        messages.success(request, f'Код подтверждения отправлен на {user.email}.')
+    else:
+        messages.info(request, 'Активный код уже отправлен. Проверьте почту.')
+    return True
 
 
 def register(request):
@@ -20,7 +43,8 @@ def register(request):
         user = form.save()
         login(request, user)
         messages.success(request, 'Аккаунт создан. Данные будут подставляться при следующих заказах.')
-        return redirect('account_dashboard')
+        _send_verification_message(request, user)
+        return redirect('account_email_verify')
 
     return render(request, 'customers/register.html', {'form': form})
 
@@ -35,6 +59,7 @@ def dashboard(request):
     )
     context = {
         'profile': profile,
+        'email_verified': profile.is_email_verified,
         'orders_total': orders.count(),
         'orders_paid': orders.filter(payment_status=Order.PAYMENT_PAID).count(),
         'orders_active': orders.exclude(status__in=[Order.STATUS_COMPLETED, Order.STATUS_CANCELLED]).count(),
@@ -50,9 +75,48 @@ def profile(request):
     form = CustomerProfileForm(request.POST or None, user=request.user)
     if request.method == 'POST' and form.is_valid():
         form.save()
+        if form.email_changed:
+            _send_verification_message(request, request.user)
+            messages.info(request, 'Email изменен. Подтвердите новый адрес кодом из письма.')
+            return redirect('account_email_verify')
         messages.success(request, 'Данные покупателя сохранены.')
         return redirect('account_profile')
-    return render(request, 'customers/profile.html', {'form': form})
+    return render(
+        request,
+        'customers/profile.html',
+        {'form': form, 'profile': get_customer_profile(request.user)},
+    )
+
+
+@login_required
+def email_verify(request):
+    profile = get_customer_profile(request.user)
+    if not request.user.email:
+        messages.error(request, 'Сначала укажите email в профиле покупателя.')
+        return redirect('account_profile')
+
+    if profile.is_email_verified:
+        messages.info(request, 'Email уже подтвержден.')
+        return redirect('account_dashboard')
+
+    form = EmailVerificationForm(request.POST or None)
+    if request.method == 'POST' and request.POST.get('action') == 'resend':
+        _send_verification_message(request, request.user, resend=True)
+        return redirect('account_email_verify')
+
+    if request.method == 'GET':
+        _send_verification_message(request, request.user)
+
+    if request.method == 'POST' and form.is_valid():
+        try:
+            verify_email_code(request.user, form.cleaned_data['code'])
+        except ValidationError as exc:
+            form.add_error('code', exc.messages[0])
+        else:
+            messages.success(request, 'Email подтвержден.')
+            return redirect('account_dashboard')
+
+    return render(request, 'customers/email_verify.html', {'form': form, 'profile': profile})
 
 
 @login_required

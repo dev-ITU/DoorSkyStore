@@ -1,13 +1,21 @@
+import re
+
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from catalog.models import Category, DoorProduct, StockItem
 from orders.models import Order
 
-from .models import CustomerProfile, DeliveryAddress
+from .models import CustomerEmailVerification, CustomerProfile, DeliveryAddress
 
 
+@override_settings(
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+    CUSTOMER_EMAIL_CODE_RESEND_COOLDOWN_SECONDS=0,
+)
 class CustomerAccountTests(TestCase):
     def setUp(self):
         category = Category.objects.create(name='Раздвижные двери', slug='sliding-doors')
@@ -34,10 +42,80 @@ class CustomerAccountTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse('account_dashboard'))
+        self.assertRedirects(response, reverse('account_email_verify'))
         user = get_user_model().objects.get(username='buyer')
         self.assertTrue(CustomerProfile.objects.filter(user=user, phone='+79990000000').exists())
         self.assertEqual(int(self.client.session['_auth_user_id']), user.pk)
+        self.assertEqual(CustomerEmailVerification.objects.filter(user=user, email='buyer@example.com').count(), 1)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_customer_can_verify_email_with_code(self):
+        self.client.post(
+            reverse('register'),
+            {
+                'username': 'verify',
+                'full_name': 'Вера Клиент',
+                'email': 'verify@example.com',
+                'phone': '+79990000001',
+                'password1': 'StrongPass12345',
+                'password2': 'StrongPass12345',
+            },
+        )
+        code = re.search(r'\b\d{6}\b', mail.outbox[-1].body).group(0)
+
+        response = self.client.post(reverse('account_email_verify'), {'code': code})
+
+        self.assertRedirects(response, reverse('account_dashboard'))
+        user = get_user_model().objects.get(username='verify')
+        self.assertTrue(user.customer_profile.is_email_verified)
+        self.assertTrue(user.email_verification_codes.filter(verified_at__isnull=False).exists())
+
+    def test_invalid_email_code_increments_attempts(self):
+        self.client.post(
+            reverse('register'),
+            {
+                'username': 'wrong-code',
+                'full_name': 'Код Ошибка',
+                'email': 'wrong-code@example.com',
+                'phone': '+79990000002',
+                'password1': 'StrongPass12345',
+                'password2': 'StrongPass12345',
+            },
+        )
+        verification = CustomerEmailVerification.objects.get(email='wrong-code@example.com')
+
+        response = self.client.post(reverse('account_email_verify'), {'code': '000000'})
+
+        self.assertEqual(response.status_code, 200)
+        verification.refresh_from_db()
+        self.assertEqual(verification.attempts, 1)
+        self.assertFalse(verification.verified_at)
+
+    def test_profile_email_change_resets_verification_and_sends_code(self):
+        user = get_user_model().objects.create_user(
+            username='profile-email',
+            email='old@example.com',
+            password='StrongPass12345',
+        )
+        CustomerProfile.objects.create(user=user, full_name='Old Name', email_verified_at=timezone.now())
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse('account_profile'),
+            {
+                'full_name': 'New Name',
+                'email': 'new@example.com',
+                'phone': '+79995554433',
+                'customer_type': CustomerProfile.CUSTOMER_INDIVIDUAL,
+            },
+        )
+
+        self.assertRedirects(response, reverse('account_email_verify'))
+        user.refresh_from_db()
+        self.assertEqual(user.email, 'new@example.com')
+        self.assertIsNone(user.customer_profile.email_verified_at)
+        self.assertEqual(CustomerEmailVerification.objects.filter(user=user, email='new@example.com').count(), 1)
+        self.assertEqual(len(mail.outbox), 1)
 
     def test_checkout_prefills_saved_customer_data_and_address(self):
         user = get_user_model().objects.create_user(

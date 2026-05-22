@@ -12,6 +12,20 @@
     </div>
     {% include "customers/_account_nav.html" %}
 
+    <div class="account-alert">
+        <div>
+            <p class="eyebrow">Статус email</p>
+            {% if profile.is_email_verified %}
+                <strong>Подтвержден</strong>
+            {% else %}
+                <strong>Требуется подтверждение</strong>
+            {% endif %}
+        </div>
+        {% if not profile.is_email_verified %}
+            <a class="button ghost" href="{% url 'account_email_verify' %}">Ввести код</a>
+        {% endif %}
+    </div>
+
     <form method="post" class="form-card checkout-form">
         {% csrf_token %}
         {{ form.non_field_errors }}

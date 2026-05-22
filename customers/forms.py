@@ -77,6 +77,7 @@ class CustomerProfileForm(forms.Form):
 
     def __init__(self, *args, user, **kwargs):
         self.user = user
+        self.email_changed = False
         profile = get_customer_profile(user)
         initial = {
             'full_name': profile.full_name or user.get_full_name() or user.get_username(),
@@ -109,11 +110,13 @@ class CustomerProfileForm(forms.Form):
 
     def save(self):
         profile = get_customer_profile(self.user)
+        old_email = (self.user.email or '').strip().lower()
+        new_email = self.cleaned_data['email'].strip().lower()
         full_name = self.cleaned_data['full_name'].strip()
         name_parts = full_name.split(' ', 1)
         self.user.first_name = name_parts[0]
         self.user.last_name = name_parts[1] if len(name_parts) > 1 else ''
-        self.user.email = self.cleaned_data['email']
+        self.user.email = new_email
         self.user.save(update_fields=['first_name', 'last_name', 'email'])
 
         profile.full_name = full_name
@@ -123,8 +126,24 @@ class CustomerProfileForm(forms.Form):
         profile.company_inn = self.cleaned_data.get('company_inn') or ''
         profile.company_kpp = self.cleaned_data.get('company_kpp') or ''
         profile.company_address = self.cleaned_data.get('company_address') or ''
+        self.email_changed = old_email != new_email
+        if self.email_changed:
+            profile.email_verified_at = None
         profile.save()
         return profile
+
+
+class EmailVerificationForm(forms.Form):
+    code = forms.RegexField(
+        label='Код из письма',
+        regex=r'^\d{6}$',
+        max_length=6,
+        min_length=6,
+        widget=forms.TextInput(
+            attrs={'autocomplete': 'one-time-code', 'inputmode': 'numeric', 'placeholder': '000000'},
+        ),
+        error_messages={'invalid': 'Введите 6 цифр из письма.'},
+    )
 
 
 class DeliveryAddressForm(forms.ModelForm):

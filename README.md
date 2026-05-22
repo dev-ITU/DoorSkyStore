@@ -44,6 +44,7 @@ Production: https://doorsky.site
 | Assets | Vite, статический production bundle в `static/react/` |
 | Runtime | Docker, Docker Compose, Gunicorn |
 | Reverse proxy | Caddy с автоматическим SSL |
+| Email | Django email backend, SMTP через env-переменные |
 | Documents | PDF-документы через серверную генерацию |
 | Reports | XLSX-выгрузки и управленческие отчеты |
 | SEO | `sitemap.xml`, `robots.txt`, человеко-понятные URL |
@@ -66,6 +67,7 @@ Production: https://doorsky.site
 - Личный кабинет покупателя с историей заказов.
 - Профиль покупателя с сохранением контактных данных и реквизитов.
 - Адресная книга доставки и автоподстановка данных в checkout.
+- Подтверждение email 6-значным кодом, отправляемым на почту.
 
 ### Склад и бизнес-логика
 
@@ -220,6 +222,7 @@ PostgreSQL
 | `reports` | PDF-документы, ZIP-пакеты, XLSX-отчеты |
 | `webanalytics` | Middleware и API клиентских метрик |
 | `backoffice` | Кастомная панель управления, роли, пользователи, аналитика |
+| `customers` | Регистрация, профиль покупателя, адреса доставки, подтверждение email |
 
 ## Основные URL
 
@@ -231,6 +234,7 @@ PostgreSQL
 | `/checkout/` | Оформление заказа |
 | `/accounts/register/` | Регистрация покупателя |
 | `/accounts/` | Личный кабинет покупателя |
+| `/accounts/email/verify/` | Подтверждение email кодом |
 | `/accounts/orders/` | История заказов покупателя |
 | `/accounts/addresses/` | Адреса доставки покупателя |
 | `/orders/<id>/<public_key>/` | Публичная страница заказа |
@@ -325,6 +329,17 @@ DJANGO_CSRF_COOKIE_SECURE=1
 DJANGO_CACHE_BACKEND=django.core.cache.backends.filebased.FileBasedCache
 DJANGO_CACHE_LOCATION=/app/.cache
 DJANGO_CATALOG_CACHE_TIMEOUT=180
+
+DJANGO_EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+DJANGO_EMAIL_HOST=<smtp-host>
+DJANGO_EMAIL_PORT=587
+DJANGO_EMAIL_HOST_USER=<smtp-user>
+DJANGO_EMAIL_HOST_PASSWORD=<smtp-password>
+DJANGO_EMAIL_USE_TLS=1
+DJANGO_EMAIL_USE_SSL=0
+DJANGO_DEFAULT_FROM_EMAIL=noreply@doorsky.site
+CUSTOMER_EMAIL_CODE_TTL_MINUTES=15
+CUSTOMER_EMAIL_CODE_RESEND_COOLDOWN_SECONDS=60
 
 POSTGRES_DB=doorsky
 POSTGRES_USER=doorsky

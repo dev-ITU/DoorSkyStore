@@ -1,4 +1,96 @@
-from .models import CustomerProfile, DeliveryAddress
+import secrets
+from datetime import timedelta
+
+from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
+from django.utils import timezone
+
+from .models import CustomerEmailVerification, CustomerProfile, DeliveryAddress
+
+
+EMAIL_CODE_TTL_MINUTES = int(getattr(settings, 'CUSTOMER_EMAIL_CODE_TTL_MINUTES', 15))
+EMAIL_CODE_RESEND_COOLDOWN_SECONDS = int(getattr(settings, 'CUSTOMER_EMAIL_CODE_RESEND_COOLDOWN_SECONDS', 60))
+
+
+def _generate_email_code():
+    return f'{secrets.randbelow(1_000_000):06d}'
+
+
+def send_email_verification_code(user, resend=False):
+    email = (user.email or '').strip().lower()
+    if not email:
+        raise ValidationError('Укажите email перед отправкой кода подтверждения.')
+
+    latest = user.email_verification_codes.filter(email__iexact=email, verified_at__isnull=True).first()
+    if latest and latest.expires_at > timezone.now() and not resend:
+        return latest, False
+    if latest and resend:
+        cooldown_until = latest.sent_at + timedelta(seconds=EMAIL_CODE_RESEND_COOLDOWN_SECONDS)
+        if cooldown_until > timezone.now():
+            seconds_left = int((cooldown_until - timezone.now()).total_seconds())
+            raise ValidationError(f'Повторная отправка будет доступна через {max(seconds_left, 1)} сек.')
+
+    code = _generate_email_code()
+    verification = CustomerEmailVerification.objects.create(
+        user=user,
+        email=email,
+        code_hash=make_password(code),
+        expires_at=timezone.now() + timedelta(minutes=EMAIL_CODE_TTL_MINUTES),
+    )
+    send_mail(
+        subject='Код подтверждения DoorSky',
+        message=(
+            f'Ваш код подтверждения DoorSky: {code}\n\n'
+            f'Код действует {EMAIL_CODE_TTL_MINUTES} минут. '
+            'Если вы не регистрировались на DoorSky, просто проигнорируйте письмо.'
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[email],
+        fail_silently=False,
+    )
+    return verification, True
+
+
+def verify_email_code(user, code):
+    email = (user.email or '').strip().lower()
+    if not email:
+        raise ValidationError('У пользователя не указан email.')
+
+    verification = user.email_verification_codes.filter(
+        email__iexact=email,
+        verified_at__isnull=True,
+    ).first()
+    if not verification:
+        raise ValidationError('Для этого email нет активного кода. Запросите новый код.')
+    if verification.is_expired:
+        raise ValidationError('Срок действия кода истек. Запросите новый код.')
+    if verification.attempts >= verification.max_attempts:
+        raise ValidationError('Превышено количество попыток. Запросите новый код.')
+
+    verification.attempts += 1
+    if not check_password(code, verification.code_hash):
+        verification.save(update_fields=['attempts'])
+        raise ValidationError('Неверный код подтверждения.')
+
+    now = timezone.now()
+    verification.verified_at = now
+    verification.save(update_fields=['attempts', 'verified_at'])
+    user.email_verification_codes.filter(email__iexact=email, verified_at__isnull=True).exclude(
+        pk=verification.pk
+    ).update(verified_at=now)
+
+    profile = get_customer_profile(user)
+    profile.email_verified_at = now
+    profile.save(update_fields=['email_verified_at', 'updated_at'])
+    return verification
+
+
+def reset_email_verification(profile):
+    if profile.email_verified_at:
+        profile.email_verified_at = None
+        profile.save(update_fields=['email_verified_at', 'updated_at'])
 
 
 def get_customer_profile(user):
@@ -71,6 +163,9 @@ def save_customer_checkout_data(user, cleaned_data):
         return None
 
     profile = get_customer_profile(user)
+    old_email = (user.email or '').strip().lower()
+    new_email = (cleaned_data.get('customer_email') or '').strip().lower()
+
     profile.full_name = cleaned_data.get('customer_name') or profile.full_name
     profile.phone = cleaned_data.get('customer_phone') or profile.phone
     profile.customer_type = cleaned_data.get('customer_type') or profile.customer_type
@@ -78,12 +173,17 @@ def save_customer_checkout_data(user, cleaned_data):
     profile.company_inn = cleaned_data.get('company_inn') or ''
     profile.company_kpp = cleaned_data.get('company_kpp') or ''
     profile.company_address = cleaned_data.get('company_address') or ''
+    if new_email and old_email != new_email:
+        profile.email_verified_at = None
     profile.save()
 
-    email = cleaned_data.get('customer_email') or ''
-    if email and user.email != email:
-        user.email = email
+    if new_email and old_email != new_email:
+        user.email = new_email
         user.save(update_fields=['email'])
+        try:
+            send_email_verification_code(user)
+        except Exception:
+            pass
 
     if not cleaned_data.get('save_delivery_address'):
         return None

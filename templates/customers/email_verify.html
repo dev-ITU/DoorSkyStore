@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Подтверждение email{% endblock %}
+
+{% block content %}
+<section class="page-section account-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Личный кабинет</p>
+            <h1>Подтверждение email</h1>
+        </div>
+    </div>
+    {% include "customers/_account_nav.html" %}
+
+    <div class="account-alert">
+        <div>
+            <p class="eyebrow">Код отправлен на</p>
+            <strong>{{ request.user.email }}</strong>
+        </div>
+        <form method="post" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="resend">
+            <button class="button ghost" type="submit">Отправить еще раз</button>
+        </form>
+    </div>
+
+    <form method="post" class="form-card verification-form">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div>
+            <label for="{{ form.code.id_for_label }}">{{ form.code.label }}{{ form.code }}</label>
+            {{ form.code.errors }}
+        </div>
+        <button class="button primary" type="submit">Подтвердить email</button>
+        <p class="form-note">Введите 6 цифр из письма. Новый код можно запросить после короткой паузы.</p>
+    </form>
+</section>
+{% endblock %}

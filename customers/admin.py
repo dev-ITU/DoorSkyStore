@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CustomerProfile, DeliveryAddress
+from .models import CustomerEmailVerification, CustomerProfile, DeliveryAddress
 
 
 @admin.register(CustomerProfile)
@@ -15,3 +15,11 @@ class DeliveryAddressAdmin(admin.ModelAdmin):
     list_display = ('title', 'user', 'recipient_name', 'phone', 'is_default', 'updated_at')
     search_fields = ('user__username', 'recipient_name', 'phone', 'address')
     list_filter = ('is_default',)
+
+
+@admin.register(CustomerEmailVerification)
+class CustomerEmailVerificationAdmin(admin.ModelAdmin):
+    list_display = ('email', 'user', 'attempts', 'expires_at', 'verified_at', 'sent_at')
+    search_fields = ('user__username', 'user__email', 'email')
+    list_filter = ('verified_at', 'sent_at')
+    readonly_fields = ('code_hash', 'created_at', 'sent_at', 'verified_at')

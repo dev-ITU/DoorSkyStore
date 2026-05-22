@@ -16,6 +16,16 @@
     </div>
     {% include "customers/_account_nav.html" %}
 
+    {% if not email_verified %}
+        <div class="account-alert">
+            <div>
+                <p class="eyebrow">Email не подтвержден</p>
+                <strong>{{ request.user.email }}</strong>
+            </div>
+            <a class="button primary" href="{% url 'account_email_verify' %}">Подтвердить</a>
+        </div>
+    {% endif %}
+
     <div class="metric-grid">
         <div><span>Всего заказов</span><strong>{{ orders_total }}</strong></div>
         <div><span>Активные</span><strong>{{ orders_active }}</strong></div>
