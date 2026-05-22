@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Почтовый клиент{% endblock %}
+
+{% block content %}
+<section class="page-section office-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Backoffice</p>
+            <h1>Почтовый клиент</h1>
+        </div>
+        <a class="button ghost" href="{% url 'backoffice_dashboard' %}">К панели</a>
+    </div>
+    {% include "backoffice/_nav.html" %}
+
+    <div class="metric-grid office-status-grid">
+        <div><span>Статус</span><strong>{% if email_config.is_configured %}Готов{% else %}Не настроен{% endif %}</strong></div>
+        <div><span>SMTP</span><strong>{{ email_config.host|default:"Не указан" }}</strong></div>
+        <div><span>Пароль</span><strong>{% if email_config.has_password %}Сохранен{% else %}Не задан{% endif %}</strong></div>
+        <div><span>Обновлено</span><strong>{{ email_config.updated_at|date:"d.m.Y H:i"|default:"-" }}</strong></div>
+    </div>
+
+    <form class="office-form office-panel" method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <div class="office-form-section">
+            <h2>SMTP подключение</h2>
+            <div class="office-access-grid">
+                <label class="office-check">{{ form.is_enabled }} {{ form.is_enabled.label }}{{ form.is_enabled.errors }}</label>
+                <label class="office-check">{{ form.use_tls }} {{ form.use_tls.label }}{{ form.use_tls.errors }}</label>
+                <label class="office-check">{{ form.use_ssl }} {{ form.use_ssl.label }}{{ form.use_ssl.errors }}</label>
+            </div>
+            <div class="field-grid">
+                <label>{{ form.host.label }}{{ form.host }}{{ form.host.errors }}</label>
+                <label>{{ form.port.label }}{{ form.port }}{{ form.port.errors }}</label>
+                <label>{{ form.username.label }}{{ form.username }}{{ form.username.errors }}</label>
+                <label>{{ form.from_email.label }}{{ form.from_email }}{{ form.from_email.errors }}</label>
+                <label>{{ form.timeout_seconds.label }}{{ form.timeout_seconds }}{{ form.timeout_seconds.errors }}</label>
+                <label>{{ form.password.label }}{{ form.password }}{{ form.password.errors }}</label>
+            </div>
+            <label class="office-check office-secret-check">{{ form.clear_password }} {{ form.clear_password.label }}{{ form.clear_password.errors }}</label>
+            <span class="helptext">Пароль не показывается в интерфейсе. Пустое поле оставляет старый пароль без изменений.</span>
+        </div>
+
+        <div class="office-form-section">
+            <h2>Тестовая отправка</h2>
+            <div class="field-grid">
+                <label>{{ form.test_email.label }}{{ form.test_email }}{{ form.test_email.errors }}</label>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="button primary" type="submit" name="action" value="save">Сохранить настройки</button>
+            <button class="button ghost" type="submit" name="action" value="send_test">Сохранить и отправить тест</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -1583,7 +1583,17 @@ body.modal-open {
     display: flex;
     min-height: 36px;
     align-items: center;
+    gap: 10px;
     padding-top: 21px;
+}
+
+.office-check input[type="checkbox"] {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    min-height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
 }
 
 .office-access-grid {
@@ -1600,6 +1610,19 @@ body.modal-open {
     background: rgba(255, 255, 255, 0.025);
     color: var(--ink);
     font-weight: 850;
+}
+
+.office-status-grid strong {
+    word-break: break-word;
+}
+
+.office-secret-check {
+    width: fit-content;
+    min-height: 34px;
+    padding: 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
 }
 
 .office-permission-grid {

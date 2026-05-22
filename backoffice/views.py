@@ -14,6 +14,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from catalog.models import Category, DoorProduct, StockItem, StockMovement
+from customers.models import EmailClientSettings
+from customers.services import send_configured_email
 from orders.models import Order, OrderItem, PaymentTransaction
 from reports.documents import DOCUMENT_TYPES
 from webanalytics.models import WebPageView, WebVisit
@@ -23,6 +25,7 @@ from .forms import (
     BackofficeUserCreateForm,
     BackofficeUserEditForm,
     CategoryForm,
+    EmailSettingsForm,
     OrderBackofficeForm,
     ProductForm,
     StockForm,
@@ -827,6 +830,45 @@ def categories(request):
         {
             'form': form,
             'categories': Category.objects.annotate(products_count=Count('products')).order_by('name'),
+        },
+    )
+
+
+@staff_required
+@require_http_methods(['GET', 'POST'])
+def email_settings(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied('Настройки почты доступны только суперпользователю.')
+
+    email_config = EmailClientSettings.get_solo()
+    form = EmailSettingsForm(request.POST or None, instance=email_config)
+    if request.method == 'POST' and form.is_valid():
+        email_config = form.save(updated_by=request.user)
+        if request.POST.get('action') == 'send_test':
+            test_email = form.cleaned_data['test_email']
+            try:
+                send_configured_email(
+                    subject='Тестовая отправка DoorSky',
+                    message=(
+                        'Это тестовое письмо из панели DoorSky.\n\n'
+                        f'Время отправки: {timezone.localtime(timezone.now()):%d.%m.%Y %H:%M}.'
+                    ),
+                    recipient_list=[test_email],
+                )
+            except Exception as exc:
+                messages.error(request, f'Настройки сохранены, но тестовое письмо не отправлено: {exc}')
+            else:
+                messages.success(request, f'Настройки сохранены. Тестовое письмо отправлено на {test_email}.')
+        else:
+            messages.success(request, 'Настройки почты сохранены.')
+        return redirect('backoffice_email_settings')
+
+    return render(
+        request,
+        'backoffice/email_settings.html',
+        {
+            'form': form,
+            'email_config': email_config,
         },
     )
 

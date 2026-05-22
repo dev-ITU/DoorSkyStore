@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CustomerEmailVerification, CustomerProfile, DeliveryAddress
+from .models import CustomerEmailVerification, CustomerProfile, DeliveryAddress, EmailClientSettings
 
 
 @admin.register(CustomerProfile)
@@ -23,3 +23,9 @@ class CustomerEmailVerificationAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'user__email', 'email')
     list_filter = ('verified_at', 'sent_at')
     readonly_fields = ('code_hash', 'created_at', 'sent_at', 'verified_at')
+
+
+@admin.register(EmailClientSettings)
+class EmailClientSettingsAdmin(admin.ModelAdmin):
+    list_display = ('host', 'port', 'from_email', 'is_enabled', 'use_tls', 'use_ssl', 'updated_at')
+    readonly_fields = ('encrypted_password', 'updated_at')

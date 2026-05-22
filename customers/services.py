@@ -4,10 +4,10 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, get_connection, send_mail
 from django.utils import timezone
 
-from .models import CustomerEmailVerification, CustomerProfile, DeliveryAddress
+from .models import CustomerEmailVerification, CustomerProfile, DeliveryAddress, EmailClientSettings
 
 
 EMAIL_CODE_TTL_MINUTES = int(getattr(settings, 'CUSTOMER_EMAIL_CODE_TTL_MINUTES', 15))
@@ -16,6 +16,37 @@ EMAIL_CODE_RESEND_COOLDOWN_SECONDS = int(getattr(settings, 'CUSTOMER_EMAIL_CODE_
 
 def _generate_email_code():
     return f'{secrets.randbelow(1_000_000):06d}'
+
+
+def send_configured_email(subject, message, recipient_list, from_email=None):
+    email_settings = EmailClientSettings.objects.filter(pk=1).first()
+    if email_settings and email_settings.is_configured:
+        connection = get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            host=email_settings.host,
+            port=email_settings.port,
+            username=email_settings.username or None,
+            password=email_settings.get_password() or None,
+            use_tls=email_settings.use_tls,
+            use_ssl=email_settings.use_ssl,
+            timeout=email_settings.timeout_seconds,
+        )
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=from_email or email_settings.from_email,
+            to=recipient_list,
+            connection=connection,
+        )
+        return email.send(fail_silently=False)
+
+    return send_mail(
+        subject=subject,
+        message=message,
+        from_email=from_email or settings.DEFAULT_FROM_EMAIL,
+        recipient_list=recipient_list,
+        fail_silently=False,
+    )
 
 
 def send_email_verification_code(user, resend=False):
@@ -39,16 +70,14 @@ def send_email_verification_code(user, resend=False):
         code_hash=make_password(code),
         expires_at=timezone.now() + timedelta(minutes=EMAIL_CODE_TTL_MINUTES),
     )
-    send_mail(
+    send_configured_email(
         subject='Код подтверждения DoorSky',
         message=(
             f'Ваш код подтверждения DoorSky: {code}\n\n'
             f'Код действует {EMAIL_CODE_TTL_MINUTES} минут. '
             'Если вы не регистрировались на DoorSky, просто проигнорируйте письмо.'
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
-        fail_silently=False,
     )
     return verification, True
 

@@ -1,3 +1,7 @@
+import base64
+import hashlib
+
+from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -88,6 +92,74 @@ class CustomerEmailVerification(models.Model):
     @property
     def can_attempt(self):
         return not self.verified_at and not self.is_expired and self.attempts < self.max_attempts
+
+
+class EmailClientSettings(models.Model):
+    is_enabled = models.BooleanField('Включить отправку через эти настройки', default=False)
+    host = models.CharField('SMTP host', max_length=255, blank=True)
+    port = models.PositiveIntegerField('SMTP port', default=587)
+    username = models.CharField('SMTP логин', max_length=255, blank=True)
+    encrypted_password = models.TextField('SMTP пароль', blank=True)
+    from_email = models.CharField('Email отправителя', max_length=255, blank=True)
+    use_tls = models.BooleanField('TLS', default=True)
+    use_ssl = models.BooleanField('SSL', default=False)
+    timeout_seconds = models.PositiveIntegerField('Таймаут, сек.', default=15)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Обновил',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+    )
+    updated_at = models.DateTimeField('Обновлено', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Настройки почтового клиента'
+        verbose_name_plural = 'Настройки почтового клиента'
+
+    def __str__(self):
+        return self.host or 'Настройки почтового клиента'
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        settings_object, _ = cls.objects.get_or_create(pk=1)
+        return settings_object
+
+    @staticmethod
+    def _fernet():
+        digest = hashlib.sha256(settings.SECRET_KEY.encode('utf-8')).digest()
+        return Fernet(base64.urlsafe_b64encode(digest))
+
+    def set_password(self, raw_password):
+        self.encrypted_password = self._fernet().encrypt(raw_password.encode('utf-8')).decode('ascii')
+
+    def get_password(self):
+        if not self.encrypted_password:
+            return ''
+        try:
+            return self._fernet().decrypt(self.encrypted_password.encode('ascii')).decode('utf-8')
+        except (InvalidToken, UnicodeDecodeError, ValueError):
+            return ''
+
+    @property
+    def has_password(self):
+        return bool(self.encrypted_password and self.get_password())
+
+    @property
+    def is_configured(self):
+        if not self.is_enabled or not self.host or not self.from_email:
+            return False
+        if self.use_tls and self.use_ssl:
+            return False
+        if self.username and not self.has_password:
+            return False
+        return True
 
 
 class DeliveryAddress(models.Model):

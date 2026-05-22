@@ -1,10 +1,14 @@
+from email.utils import parseaddr
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group, Permission
+from django.core.validators import validate_email
 from django.utils.text import slugify
 
 from catalog.models import Category, DoorProduct, StockItem
+from customers.models import EmailClientSettings
 from orders.models import Order
 
 
@@ -125,6 +129,86 @@ class OrderBackofficeForm(BackofficeFormMixin, forms.ModelForm):
             'comment': forms.Textarea(attrs={'rows': 3}),
             'payment_comment': forms.Textarea(attrs={'rows': 2}),
         }
+
+
+class EmailSettingsForm(BackofficeFormMixin, forms.ModelForm):
+    password = forms.CharField(
+        label='SMTP пароль',
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={
+                'autocomplete': 'new-password',
+                'placeholder': 'Оставьте пустым, чтобы не менять',
+            }
+        ),
+    )
+    clear_password = forms.BooleanField(label='Удалить сохраненный пароль', required=False)
+    test_email = forms.EmailField(label='Email для теста', required=False)
+
+    class Meta:
+        model = EmailClientSettings
+        fields = (
+            'is_enabled',
+            'host',
+            'port',
+            'username',
+            'from_email',
+            'use_tls',
+            'use_ssl',
+            'timeout_seconds',
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_enabled = cleaned_data.get('is_enabled')
+        username = (cleaned_data.get('username') or '').strip()
+        from_email = (cleaned_data.get('from_email') or '').strip()
+        password = cleaned_data.get('password')
+        clear_password = cleaned_data.get('clear_password')
+        is_test = self.data.get('action') == 'send_test'
+
+        if cleaned_data.get('use_tls') and cleaned_data.get('use_ssl'):
+            self.add_error('use_ssl', 'TLS и SSL нельзя включать одновременно.')
+
+        if password and clear_password:
+            self.add_error('clear_password', 'Нельзя одновременно задать новый пароль и удалить текущий.')
+
+        if password and not username:
+            self.add_error('username', 'Для пароля нужен SMTP логин.')
+
+        if from_email:
+            parsed_email = parseaddr(from_email)[1] or from_email
+            try:
+                validate_email(parsed_email)
+            except forms.ValidationError:
+                self.add_error('from_email', 'Укажите корректный email отправителя.')
+
+        if is_enabled:
+            if not cleaned_data.get('host'):
+                self.add_error('host', 'Укажите SMTP host.')
+            if not cleaned_data.get('from_email'):
+                self.add_error('from_email', 'Укажите email отправителя.')
+            if username and not password and (clear_password or not self.instance.has_password):
+                self.add_error('password', 'Укажите SMTP пароль для этого логина.')
+
+        if is_test:
+            if not is_enabled:
+                self.add_error('is_enabled', 'Для тестовой отправки включите почтовые настройки.')
+            if not cleaned_data.get('test_email'):
+                self.add_error('test_email', 'Укажите адрес для тестовой отправки.')
+
+        return cleaned_data
+
+    def save(self, commit=True, updated_by=None):
+        email_settings = super().save(commit=False)
+        email_settings.updated_by = updated_by
+        if self.cleaned_data.get('clear_password'):
+            email_settings.encrypted_password = ''
+        elif self.cleaned_data.get('password'):
+            email_settings.set_password(self.cleaned_data['password'])
+        if commit:
+            email_settings.save()
+        return email_settings
 
 
 class UserPermissionMixin(BackofficeFormMixin):

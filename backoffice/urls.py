@@ -12,6 +12,7 @@ urlpatterns = [
     path('catalog/new/', views.product_create, name='backoffice_product_create'),
     path('catalog/<int:pk>/edit/', views.product_edit, name='backoffice_product_edit'),
     path('categories/', views.categories, name='backoffice_categories'),
+    path('email-settings/', views.email_settings, name='backoffice_email_settings'),
     path('users/', views.users_list, name='backoffice_users'),
     path('users/new/', views.user_create, name='backoffice_user_create'),
     path('users/<int:pk>/', views.user_edit, name='backoffice_user_edit'),

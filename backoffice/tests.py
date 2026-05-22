@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from catalog.models import Category, DoorProduct, StockItem, StockMovement
+from customers.models import EmailClientSettings
 
 
 class BackofficeTests(TestCase):
@@ -140,3 +141,40 @@ class BackofficeTests(TestCase):
         self.assertTrue(user.is_staff)
         self.assertTrue(user.groups.filter(pk=group.pk).exists())
         self.assertTrue(user.has_perm('orders.view_order'))
+
+    def test_superuser_can_update_email_settings_without_exposing_password(self):
+        self.client.force_login(self.superuser)
+
+        response = self.client.post(
+            reverse('backoffice_email_settings'),
+            {
+                'is_enabled': 'on',
+                'host': 'smtp.example.com',
+                'port': 587,
+                'username': 'doorsky-mailer',
+                'password': 'smtp-secret-value',
+                'from_email': 'DoorSky <noreply@example.com>',
+                'use_tls': 'on',
+                'timeout_seconds': 12,
+                'action': 'save',
+            },
+        )
+
+        self.assertRedirects(response, reverse('backoffice_email_settings'))
+        email_settings = EmailClientSettings.objects.get(pk=1)
+        self.assertTrue(email_settings.is_enabled)
+        self.assertEqual(email_settings.host, 'smtp.example.com')
+        self.assertEqual(email_settings.get_password(), 'smtp-secret-value')
+        self.assertNotEqual(email_settings.encrypted_password, 'smtp-secret-value')
+
+        response = self.client.get(reverse('backoffice_email_settings'))
+        self.assertContains(response, 'smtp.example.com')
+        self.assertContains(response, 'Сохранен')
+        self.assertNotContains(response, 'smtp-secret-value')
+
+    def test_staff_cannot_open_email_settings(self):
+        self.client.force_login(self.staff)
+
+        response = self.client.get(reverse('backoffice_email_settings'))
+
+        self.assertEqual(response.status_code, 403)

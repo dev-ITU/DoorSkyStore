@@ -21,6 +21,9 @@
     {% if request.user.is_superuser or perms.auth.add_user or perms.auth.change_user %}
         <a href="{% url 'backoffice_users' %}">Пользователи</a>
     {% endif %}
+    {% if request.user.is_superuser %}
+        <a href="{% url 'backoffice_email_settings' %}">Почта</a>
+    {% endif %}
     {% if perms.orders.view_order %}
         <a href="{% url 'sales_report_xlsx' %}">Продажи XLSX</a>
     {% endif %}
