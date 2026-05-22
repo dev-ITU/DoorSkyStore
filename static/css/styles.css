@@ -1906,6 +1906,14 @@ tr:last-child td {
     font-size: 14px;
 }
 
+.form-note-warning {
+    padding: 10px 12px;
+    border: 1px solid rgba(215, 179, 106, 0.34);
+    border-radius: 8px;
+    background: rgba(215, 179, 106, 0.09);
+    color: var(--champagne);
+}
+
 .form-note a {
     color: var(--accent);
     font-weight: 850;

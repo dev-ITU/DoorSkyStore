@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Ошибка проверки формы{% endblock %}
+
+{% block content %}
+<section class="auth-panel">
+    <div class="form-card">
+        <h1>Форма устарела</h1>
+        <p>Обновите страницу и отправьте форму еще раз. Если ошибка повторится, проверьте, что cookies для doorsky.site разрешены.</p>
+        <a class="button primary" href="{{ request.path }}">Обновить страницу</a>
+    </div>
+</section>
+{% endblock %}

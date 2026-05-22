@@ -7,6 +7,9 @@
     <h1>Вход</h1>
     <form method="post" class="form-card">
         {% csrf_token %}
+        {% if request.GET.csrf %}
+            <p class="form-note form-note-warning">Сессия формы устарела. Страница обновлена, попробуйте войти еще раз.</p>
+        {% endif %}
         {{ form.as_p }}
         <button class="button primary" type="submit">Войти</button>
         <p class="form-note">Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>

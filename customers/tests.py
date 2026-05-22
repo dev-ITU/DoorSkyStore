@@ -2,7 +2,7 @@ import re
 
 from django.contrib.auth import get_user_model
 from django.core import mail
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -65,6 +65,21 @@ class CustomerAccountTests(TestCase):
         )
 
         self.assertRedirects(response, reverse('catalog'))
+
+    def test_login_csrf_failure_refreshes_form(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+
+        response = csrf_client.post(
+            f'{reverse("login")}?next=/office/',
+            {
+                'username': 'buyer',
+                'password': 'wrong-pass',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(f'{reverse("login")}?csrf=1', response['Location'])
+        self.assertIn('next=%2Foffice%2F', response['Location'])
 
     def test_customer_can_verify_email_with_code(self):
         self.client.post(
