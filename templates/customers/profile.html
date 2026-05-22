@@ -47,8 +47,9 @@
                     </label>
                 {% endfor %}
             </div>
+            {{ form.customer_type.errors }}
         </div>
-        <div class="form-section">
+        <div class="form-section company-fields">
             <h2>Реквизиты</h2>
             <div class="field-grid">
                 <div><label for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}{{ form.company_name }}</label>{{ form.company_name.errors }}</div>
@@ -60,4 +61,41 @@
         <button class="button primary" type="submit">Сохранить</button>
     </form>
 </section>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+(() => {
+    const form = document.querySelector('.checkout-form');
+    if (!form) {
+        return;
+    }
+
+    const companyFields = form.querySelector('.company-fields');
+    const companyInputs = companyFields ? companyFields.querySelectorAll('input, textarea, select') : [];
+
+    function checkedValue(name) {
+        return form.querySelector(`input[name="${name}"]:checked`)?.value || '';
+    }
+
+    function syncCustomerType() {
+        const isCompany = checkedValue('customer_type') === 'company';
+        form.classList.toggle('is-company', isCompany);
+        if (companyFields) {
+            companyFields.hidden = !isCompany;
+        }
+        companyInputs.forEach((input) => {
+            input.disabled = !isCompany;
+            if (!isCompany) {
+                input.value = '';
+            }
+        });
+    }
+
+    form.querySelectorAll('input[name="customer_type"]').forEach((input) => {
+        input.addEventListener('change', syncCustomerType);
+    });
+    syncCustomerType();
+})();
+</script>
 {% endblock %}
