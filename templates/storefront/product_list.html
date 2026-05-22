@@ -85,11 +85,10 @@
             <div class="product-grid">
                 {% for product in products %}
                     <article class="product-card">
-                        <a class="product-image" href="{{ product.get_absolute_url }}">
+                        <a class="product-image {% if not product.display_image %}is-missing{% endif %}" href="{{ product.get_absolute_url }}">
+                            <span class="product-image-placeholder" aria-hidden="true"><strong>DoorSky</strong><em>{{ product.category.name }}</em></span>
                             {% if product.display_image %}
-                                <img src="{{ product.display_image }}" alt="{{ product.name }}" loading="lazy" decoding="async">
-                            {% else %}
-                                <span>{{ product.category.name }}</span>
+                                <img src="{{ product.display_image }}" alt="{{ product.name }}" loading="{% if forloop.counter <= 6 %}eager{% else %}lazy{% endif %}" decoding="async" {% if forloop.counter <= 6 %}fetchpriority="high"{% endif %} onerror="this.closest('.product-image').classList.add('is-missing'); this.remove();">
                             {% endif %}
                             <span class="stock-badge {% if product.available_quantity > 0 %}is-available{% else %}is-empty{% endif %}">
                                 {% if product.available_quantity > 0 %}В наличии{% else %}Под заказ{% endif %}

@@ -303,11 +303,12 @@ export function CatalogIsland({
         ) : null}
         {products.length > 0 ? (
           <div className="product-grid">
-            {products.map((product) => (
+            {products.map((product, index) => (
               <ProductCard
                 addToCartUrl={addToCartUrl}
                 key={product.id}
                 onToast={push}
+                priority={index < 6}
                 product={product}
               />
             ))}

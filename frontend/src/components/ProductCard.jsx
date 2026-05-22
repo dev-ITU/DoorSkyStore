@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { postForm } from '../lib/api.js';
 import { money } from '../lib/format.js';
 
-export function ProductCard({ product, addToCartUrl, onToast }) {
+export function ProductCard({ product, addToCartUrl, onToast, priority = false }) {
   const imageUrl = product.display_image || '';
   const available = Number(product.available_quantity || 0);
   const initialCartQuantity = Number(product.cart_quantity || 0);
@@ -12,11 +12,27 @@ export function ProductCard({ product, addToCartUrl, onToast }) {
   const [quantity, setQuantity] = useState(initialRemaining > 0 ? 1 : 0);
   const [saving, setSaving] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(!imageUrl);
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageRef = useRef(null);
   const remaining = Math.max(available - cartQuantity, 0);
   const disabled = remaining <= 0 || saving;
 
   useEffect(() => {
     setImageLoaded(!imageUrl);
+    setImageFailed(false);
+  }, [imageUrl]);
+
+  useEffect(() => {
+    const image = imageRef.current;
+    if (!imageUrl || !image || !image.complete) {
+      return;
+    }
+    if (image.naturalWidth > 0) {
+      setImageLoaded(true);
+      return;
+    }
+    setImageFailed(true);
+    setImageLoaded(true);
   }, [imageUrl]);
 
   useEffect(() => {
@@ -64,22 +80,33 @@ export function ProductCard({ product, addToCartUrl, onToast }) {
 
   return (
     <article className="product-card">
-      <a className={`product-image ${imageUrl && !imageLoaded ? 'is-loading' : ''}`} href={product.detail_url}>
-        {imageUrl ? (
+      <a
+        className={`product-image ${imageUrl && !imageLoaded && !imageFailed ? 'is-loading' : ''} ${
+          !imageUrl || imageFailed ? 'is-missing' : ''
+        }`}
+        href={product.detail_url}
+      >
+        <span className="product-image-placeholder" aria-hidden="true">
+          <strong>DoorSky</strong>
+          <em>{product.category.name}</em>
+        </span>
+        {imageUrl && !imageFailed ? (
           <img
             alt={product.name}
             className={imageLoaded ? 'is-loaded' : ''}
             data-lazy-image
             decoding="async"
-            fetchPriority="low"
-            loading="lazy"
-            onError={() => setImageLoaded(true)}
+            fetchPriority={priority ? 'high' : 'low'}
+            loading={priority ? 'eager' : 'lazy'}
+            onError={() => {
+              setImageFailed(true);
+              setImageLoaded(true);
+            }}
             onLoad={() => setImageLoaded(true)}
+            ref={imageRef}
             src={imageUrl}
           />
-        ) : (
-          <span>{product.category.name}</span>
-        )}
+        ) : null}
         <span className={`stock-badge ${available > 0 ? 'is-available' : 'is-empty'}`}>
           {available > 0 ? 'В наличии' : 'Под заказ'}
         </span>

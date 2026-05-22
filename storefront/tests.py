@@ -14,6 +14,7 @@ class SeoEndpointTests(TestCase):
             sku='DSK-SEO-1',
             price=120000,
             opening_type=DoorProduct.OPENING_SLIDING,
+            image_url='https://example.com/slide-seo.jpg',
             is_active=True,
         )
         StockItem.objects.create(product=product, quantity=3, reserved_quantity=0)

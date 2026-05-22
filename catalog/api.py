@@ -129,7 +129,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(payload)
 
     def get_queryset(self):
-        queryset = DoorProduct.objects.active().select_related('category', 'stock')
+        queryset = DoorProduct.objects.storefront().select_related('category', 'stock')
         params = self.request.query_params
 
         query = params.get('q')

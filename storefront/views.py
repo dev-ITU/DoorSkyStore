@@ -117,7 +117,7 @@ def _normalize_cart(session):
 def product_list(request):
     _normalize_cart(request.session)
     cart = _cart(request.session)
-    products = list(DoorProduct.objects.active().select_related('category', 'stock').order_by('name')[:12])
+    products = list(DoorProduct.objects.storefront().select_related('category', 'stock').order_by('name')[:12])
     facets = catalog_facets_payload()
     initial_products = product_payloads_for_cart([product_base_payload(product) for product in products], cart)
     initial_next_url = reverse('product-list')
@@ -150,7 +150,7 @@ def product_detail(request, slug):
     _normalize_cart(request.session)
     cart = _cart(request.session)
     product = get_object_or_404(
-        DoorProduct.objects.active().select_related('category', 'stock'),
+        DoorProduct.objects.storefront().select_related('category', 'stock'),
         slug=slug,
     )
     return render(

@@ -20,6 +20,7 @@ class ProductApiTests(TestCase):
             color='Черный',
             finish='Прозрачное стекло',
             opening_type=DoorProduct.OPENING_SWING,
+            image_url='https://example.com/ag-slim.jpg',
         )
         StockItem.objects.create(product=self.product, quantity=3, reserved_quantity=1)
 

@@ -103,7 +103,7 @@ def catalog_facets_payload():
     if cached is not None:
         return cached
 
-    products = DoorProduct.objects.active()
+    products = DoorProduct.objects.storefront()
     categories = list(
         Category.objects.filter(is_active=True)
         .order_by('name')

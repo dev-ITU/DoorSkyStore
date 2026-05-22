@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.text import slugify
 
@@ -26,6 +27,9 @@ class Category(models.Model):
 class ProductQuerySet(models.QuerySet):
     def active(self):
         return self.filter(is_active=True, category__is_active=True)
+
+    def storefront(self):
+        return self.active().filter(Q(image__isnull=False, image__gt='') | Q(image_url__gt=''))
 
     def in_stock(self):
         return self.filter(stock__quantity__gt=models.F('stock__reserved_quantity'))
