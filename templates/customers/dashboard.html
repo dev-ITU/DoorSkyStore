@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+<section class="page-section account-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">DoorSky account</p>
+            <h1>Личный кабинет</h1>
+        </div>
+        <div class="actions">
+            <a class="button primary" href="{% url 'catalog' %}">В каталог</a>
+            <a class="button ghost" href="{% url 'account_profile' %}">Изменить данные</a>
+        </div>
+    </div>
+    {% include "customers/_account_nav.html" %}
+
+    <div class="metric-grid">
+        <div><span>Всего заказов</span><strong>{{ orders_total }}</strong></div>
+        <div><span>Активные</span><strong>{{ orders_active }}</strong></div>
+        <div><span>Оплаченные</span><strong>{{ orders_paid }}</strong></div>
+        <div><span>Адресов доставки</span><strong>{{ addresses_total }}</strong></div>
+    </div>
+
+    <div class="account-grid">
+        <section class="account-panel">
+            <div class="office-panel-head">
+                <h2>Последние заказы</h2>
+                <a href="{% url 'account_orders' %}">Все заказы</a>
+            </div>
+            <div class="account-list">
+                {% for order in recent_orders %}
+                    <article class="account-row">
+                        <div>
+                            <p class="eyebrow">Заказ #{{ order.pk }}</p>
+                            <h2>{{ order.get_status_display }}</h2>
+                            <p>{{ order.created_at|date:"d.m.Y H:i" }} · {{ order.get_payment_status_display }}</p>
+                        </div>
+                        <div class="account-row-side">
+                            <strong>{{ order.subtotal|floatformat:0 }} руб.</strong>
+                            <a class="button ghost" href="{{ order.get_absolute_url }}">Открыть</a>
+                        </div>
+                    </article>
+                {% empty %}
+                    <p class="empty-state">Заказов пока нет.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="account-panel">
+            <div class="office-panel-head">
+                <h2>Адреса доставки</h2>
+                <a href="{% url 'account_address_create' %}">Добавить</a>
+            </div>
+            <div class="account-list">
+                {% for address in addresses %}
+                    <article class="address-card">
+                        <div>
+                            <h2>{{ address.title }}</h2>
+                            <p>{{ address.address }}</p>
+                        </div>
+                        {% if address.is_default %}<span class="status-pill payment-paid">По умолчанию</span>{% endif %}
+                    </article>
+                {% empty %}
+                    <p class="empty-state">Добавьте адрес, и checkout будет заполняться быстрее.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}

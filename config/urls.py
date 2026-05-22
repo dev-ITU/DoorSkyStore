@@ -23,6 +23,7 @@ from django.views.generic import RedirectView
 from rest_framework.routers import DefaultRouter
 
 from catalog.api import CategoryViewSet, ProductViewSet
+from customers.forms import CustomerAuthenticationForm
 from storefront.sitemaps import ProductSitemap, StaticViewSitemap
 from storefront.views import robots_txt
 
@@ -39,8 +40,16 @@ urlpatterns = [
     path('admin/', RedirectView.as_view(pattern_name='backoffice_dashboard', permanent=False)),
     path('robots.txt', robots_txt, name='robots_txt'),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
-    path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
+    path(
+        'accounts/login/',
+        auth_views.LoginView.as_view(
+            template_name='registration/login.html',
+            authentication_form=CustomerAuthenticationForm,
+        ),
+        name='login',
+    ),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/', include('customers.urls')),
     path('api/', include(router.urls)),
     path('_analytics/', include('webanalytics.urls')),
     path('office/', include('backoffice.urls')),

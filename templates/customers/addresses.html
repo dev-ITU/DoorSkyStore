@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Адреса доставки{% endblock %}
+
+{% block content %}
+<section class="page-section account-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Личный кабинет</p>
+            <h1>Адреса доставки</h1>
+        </div>
+        <a class="button primary" href="{% url 'account_address_create' %}">Добавить адрес</a>
+    </div>
+    {% include "customers/_account_nav.html" %}
+
+    <div class="address-grid">
+        {% for address in addresses %}
+            <article class="address-card">
+                <div>
+                    <p class="eyebrow">{% if address.is_default %}По умолчанию{% else %}Адрес{% endif %}</p>
+                    <h2>{{ address.title }}</h2>
+                    <p>{{ address.address }}</p>
+                    {% if address.recipient_name or address.phone %}
+                        <p>{{ address.recipient_name }}{% if address.recipient_name and address.phone %} · {% endif %}{{ address.phone }}</p>
+                    {% endif %}
+                </div>
+                <div class="actions">
+                    <a class="button ghost" href="{% url 'account_address_edit' address.pk %}">Изменить</a>
+                    <form method="post" action="{% url 'account_address_delete' address.pk %}" class="inline-form">
+                        {% csrf_token %}
+                        <button class="button ghost danger-button" type="submit">Удалить</button>
+                    </form>
+                </div>
+            </article>
+        {% empty %}
+            <p class="empty-state">Сохраненных адресов пока нет.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

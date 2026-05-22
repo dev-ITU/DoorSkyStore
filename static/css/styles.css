@@ -1877,6 +1877,114 @@ tr:last-child td {
     border-bottom: 0;
 }
 
+.form-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.form-note a {
+    color: var(--accent);
+    font-weight: 850;
+}
+
+.check-list {
+    display: grid;
+    gap: 8px;
+}
+
+.account-page {
+    gap: 16px;
+}
+
+.account-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background:
+        linear-gradient(90deg, rgba(72, 185, 167, 0.07), transparent 46%),
+        var(--surface);
+}
+
+.account-nav a {
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 850;
+}
+
+.account-nav a:hover {
+    border-color: rgba(215, 179, 106, 0.28);
+    background: rgba(215, 179, 106, 0.07);
+    color: var(--ink);
+}
+
+.account-grid,
+.address-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.account-panel,
+.address-card,
+.account-row {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(215, 179, 106, 0.055), transparent 42%),
+        var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.account-list {
+    display: grid;
+    gap: 12px;
+}
+
+.account-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+}
+
+.account-row p,
+.address-card p {
+    margin-bottom: 0;
+    color: var(--muted);
+}
+
+.account-row-side {
+    display: grid;
+    gap: 10px;
+    justify-items: end;
+}
+
+.account-row-side strong {
+    font-size: 22px;
+}
+
+.address-card h2 {
+    margin-bottom: 8px;
+}
+
+.danger-button:hover,
+.button.danger-button:hover {
+    border-color: var(--danger);
+    background: rgba(239, 107, 99, 0.12);
+    color: #ff9a93;
+}
+
 @keyframes card-reveal {
     from {
         opacity: 0;
@@ -1963,6 +2071,8 @@ tr:last-child td {
     .checkout-layout,
     .report-grid,
     .office-grid,
+    .account-grid,
+    .address-grid,
     .office-action-grid,
     .office-permission-grid {
         grid-template-columns: 1fr;
@@ -2084,8 +2194,27 @@ tr:last-child td {
         flex-wrap: nowrap;
     }
 
+    .account-nav {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
     .office-panel {
         padding: 12px;
+    }
+
+    .account-panel,
+    .address-card,
+    .account-row {
+        padding: 12px;
+    }
+
+    .account-row {
+        grid-template-columns: 1fr;
+    }
+
+    .account-row-side {
+        justify-items: stretch;
     }
 
     .office-stock-form {

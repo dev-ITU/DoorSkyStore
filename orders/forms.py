@@ -4,6 +4,11 @@ from .models import Order
 
 
 class CheckoutForm(forms.Form):
+    delivery_address_id = forms.ChoiceField(
+        label='Сохраненный адрес',
+        choices=[],
+        required=False,
+    )
     customer_type = forms.ChoiceField(
         label='Покупатель',
         choices=Order.CUSTOMER_TYPE_CHOICES,
@@ -31,6 +36,28 @@ class CheckoutForm(forms.Form):
         required=False,
     )
     comment = forms.CharField(label='Комментарий', widget=forms.Textarea(attrs={'rows': 3}), required=False)
+    save_delivery_address = forms.BooleanField(label='Сохранить адрес в личном кабинете', initial=True, required=False)
+    make_default_address = forms.BooleanField(label='Использовать этот адрес по умолчанию', initial=True, required=False)
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        if user and user.is_authenticated:
+            from customers.services import checkout_initial_for_user
+
+            initial = checkout_initial_for_user(user)
+            initial.update(kwargs.pop('initial', {}))
+            kwargs['initial'] = initial
+        super().__init__(*args, **kwargs)
+
+        if user and user.is_authenticated:
+            addresses = list(user.delivery_addresses.all())
+            self.fields['delivery_address_id'].choices = [('', 'Новый адрес или ручной ввод')] + [
+                (str(address.pk), f'{address.title} - {address.address[:72]}') for address in addresses
+            ]
+        else:
+            self.fields.pop('delivery_address_id')
+            self.fields.pop('save_delivery_address')
+            self.fields.pop('make_default_address')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -38,6 +65,22 @@ class CheckoutForm(forms.Form):
         payment_method = cleaned_data.get('payment_method') or Order.PAYMENT_CARD
         cleaned_data['customer_type'] = customer_type
         cleaned_data['payment_method'] = payment_method
+        cleaned_data['selected_delivery_address'] = None
+
+        delivery_address_id = cleaned_data.get('delivery_address_id')
+        if delivery_address_id:
+            from customers.models import DeliveryAddress
+
+            address = DeliveryAddress.objects.filter(
+                pk=delivery_address_id,
+                user=self.user,
+            ).first()
+            if not address:
+                self.add_error('delivery_address_id', 'Выберите адрес из своей адресной книги.')
+            else:
+                cleaned_data['selected_delivery_address'] = address
+                if not cleaned_data.get('delivery_address'):
+                    cleaned_data['delivery_address'] = address.address
 
         if customer_type == Order.CUSTOMER_COMPANY:
             if not cleaned_data.get('company_name'):

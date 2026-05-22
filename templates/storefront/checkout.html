@@ -3,6 +3,7 @@
 {% block title %}Оформление заказа{% endblock %}
 
 {% block content %}
+{{ saved_addresses|json_script:"saved-addresses" }}
 <section class="checkout-layout">
     <div>
         <h1>Оформление заказа</h1>
@@ -61,10 +62,33 @@
 
             <div class="form-section">
                 <h2>Доставка и оплата</h2>
+                {% if form.delivery_address_id %}
+                    <div>
+                        <label for="{{ form.delivery_address_id.id_for_label }}">{{ form.delivery_address_id.label }}{{ form.delivery_address_id }}</label>
+                        {{ form.delivery_address_id.errors }}
+                    </div>
+                {% elif not request.user.is_authenticated %}
+                    <p class="form-note">
+                        <a href="{% url 'login' %}?next={% url 'checkout' %}">Войдите</a> или
+                        <a href="{% url 'register' %}">зарегистрируйтесь</a>, чтобы сохранять адреса и видеть историю заказов.
+                    </p>
+                {% endif %}
                 <div>
                     <label for="{{ form.delivery_address.id_for_label }}">{{ form.delivery_address.label }}{{ form.delivery_address }}</label>
                     {{ form.delivery_address.errors }}
                 </div>
+                {% if form.save_delivery_address %}
+                    <div class="check-list">
+                        <label class="check-row">
+                            {{ form.save_delivery_address }}
+                            <span>{{ form.save_delivery_address.label }}</span>
+                        </label>
+                        <label class="check-row">
+                            {{ form.make_default_address }}
+                            <span>{{ form.make_default_address.label }}</span>
+                        </label>
+                    </div>
+                {% endif %}
                 <div class="choice-grid payment-choice-grid">
                     {% for radio in form.payment_method %}
                         <label class="choice-card payment-choice-card" for="{{ radio.id_for_label }}">
@@ -110,6 +134,11 @@
     const companyFields = form.querySelector('.company-fields');
     const companyInputs = companyFields ? companyFields.querySelectorAll('input, textarea, select') : [];
     const submitButton = form.querySelector('button[type="submit"]');
+    const savedAddresses = JSON.parse(document.getElementById('saved-addresses')?.textContent || '[]');
+    const addressSelect = form.querySelector('select[name="delivery_address_id"]');
+    const deliveryAddress = form.querySelector('[name="delivery_address"]');
+    const customerName = form.querySelector('[name="customer_name"]');
+    const customerPhone = form.querySelector('[name="customer_phone"]');
 
     function checkedValue(name) {
         return form.querySelector(`input[name="${name}"]:checked`)?.value || '';
@@ -137,12 +166,32 @@
         submitButton.textContent = isCashOnDelivery ? 'Создать заказ' : 'Создать заказ и перейти к оплате';
     }
 
+    function syncSavedAddress() {
+        if (!addressSelect || !deliveryAddress) {
+            return;
+        }
+        const address = savedAddresses.find((item) => String(item.id) === addressSelect.value);
+        if (!address) {
+            return;
+        }
+        deliveryAddress.value = address.address || '';
+        if (customerName && address.recipient_name) {
+            customerName.value = address.recipient_name;
+        }
+        if (customerPhone && address.phone) {
+            customerPhone.value = address.phone;
+        }
+    }
+
     form.querySelectorAll('input[name="customer_type"]').forEach((input) => {
         input.addEventListener('change', syncCustomerType);
     });
     form.querySelectorAll('input[name="payment_method"]').forEach((input) => {
         input.addEventListener('change', syncPaymentMethod);
     });
+    if (addressSelect) {
+        addressSelect.addEventListener('change', syncSavedAddress);
+    }
     syncCustomerType();
     syncPaymentMethod();
 })();

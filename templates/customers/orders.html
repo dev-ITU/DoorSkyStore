@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}История заказов{% endblock %}
+
+{% block content %}
+<section class="page-section account-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Личный кабинет</p>
+            <h1>История заказов</h1>
+        </div>
+        <a class="button primary" href="{% url 'catalog' %}">Новый заказ</a>
+    </div>
+    {% include "customers/_account_nav.html" %}
+
+    <div class="account-list">
+        {% for order in orders %}
+            <article class="account-row">
+                <div>
+                    <p class="eyebrow">Заказ #{{ order.pk }} · {{ order.created_at|date:"d.m.Y H:i" }}</p>
+                    <h2>{{ order.get_status_display }}</h2>
+                    <p>{{ order.items.count }} поз. · {{ order.get_payment_status_display }} · {{ order.get_payment_method_display }}</p>
+                </div>
+                <div class="account-row-side">
+                    <strong>{{ order.subtotal|floatformat:0 }} руб.</strong>
+                    <a class="button ghost" href="{{ order.get_absolute_url }}">Документы и оплата</a>
+                </div>
+            </article>
+        {% empty %}
+            <p class="empty-state">Заказов пока нет.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

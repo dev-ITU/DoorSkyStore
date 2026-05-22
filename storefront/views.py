@@ -301,6 +301,12 @@ def update_cart(request):
 
 
 def checkout(request):
+    if request.user.is_authenticated:
+        from customers.services import address_payloads_for_user, save_customer_checkout_data
+    else:
+        address_payloads_for_user = None
+        save_customer_checkout_data = None
+
     adjustments = _normalize_cart(request.session)
     for adjustment in adjustments:
         messages.warning(request, adjustment)
@@ -309,7 +315,7 @@ def checkout(request):
         messages.info(request, 'Корзина пуста.')
         return redirect('catalog')
 
-    form = CheckoutForm(request.POST or None)
+    form = CheckoutForm(request.POST or None, user=request.user)
     if request.method == 'POST' and form.is_valid():
         try:
             with transaction.atomic():
@@ -340,6 +346,8 @@ def checkout(request):
                     )
                 order.recalculate()
                 order.reserve_stock(created_by=request.user if request.user.is_authenticated else None)
+                if save_customer_checkout_data:
+                    save_customer_checkout_data(request.user, form.cleaned_data)
         except ValidationError as exc:
             messages.error(request, exc.messages[0] if hasattr(exc, 'messages') else str(exc))
         else:
@@ -349,7 +357,16 @@ def checkout(request):
                 return redirect(order.get_payment_url())
             return redirect(order.get_absolute_url())
 
-    return render(request, 'storefront/checkout.html', {'form': form, 'items': items, 'subtotal': subtotal})
+    return render(
+        request,
+        'storefront/checkout.html',
+        {
+            'form': form,
+            'items': items,
+            'subtotal': subtotal,
+            'saved_addresses': address_payloads_for_user(request.user) if address_payloads_for_user else [],
+        },
+    )
 
 
 def robots_txt(request):

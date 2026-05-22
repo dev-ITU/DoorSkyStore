@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'reports',
     'webanalytics',
     'backoffice',
+    'customers',
 ]
 
 MIDDLEWARE = [

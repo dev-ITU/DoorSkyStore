@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Данные покупателя{% endblock %}
+
+{% block content %}
+<section class="page-section account-page">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Личный кабинет</p>
+            <h1>Данные покупателя</h1>
+        </div>
+    </div>
+    {% include "customers/_account_nav.html" %}
+
+    <form method="post" class="form-card checkout-form">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="form-section">
+            <h2>Контакты</h2>
+            <div class="field-grid">
+                <div><label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}{{ form.full_name }}</label>{{ form.full_name.errors }}</div>
+                <div><label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}{{ form.phone }}</label>{{ form.phone.errors }}</div>
+                <div><label for="{{ form.email.id_for_label }}">{{ form.email.label }}{{ form.email }}</label>{{ form.email.errors }}</div>
+            </div>
+        </div>
+        <div class="form-section">
+            <h2>Тип покупателя</h2>
+            <div class="choice-grid customer-choice-grid">
+                {% for radio in form.customer_type %}
+                    <label class="choice-card" for="{{ radio.id_for_label }}">
+                        {{ radio.tag }}
+                        <span class="choice-card-title">{{ radio.choice_label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-section">
+            <h2>Реквизиты</h2>
+            <div class="field-grid">
+                <div><label for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}{{ form.company_name }}</label>{{ form.company_name.errors }}</div>
+                <div><label for="{{ form.company_inn.id_for_label }}">{{ form.company_inn.label }}{{ form.company_inn }}</label>{{ form.company_inn.errors }}</div>
+                <div><label for="{{ form.company_kpp.id_for_label }}">{{ form.company_kpp.label }}{{ form.company_kpp }}</label>{{ form.company_kpp.errors }}</div>
+                <div class="field-wide"><label for="{{ form.company_address.id_for_label }}">{{ form.company_address.label }}{{ form.company_address }}</label>{{ form.company_address.errors }}</div>
+            </div>
+        </div>
+        <button class="button primary" type="submit">Сохранить</button>
+    </form>
+</section>
+{% endblock %}
